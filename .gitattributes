@@ -1,0 +1,4 @@
+# Los scripts de shell SIEMPRE con LF (bash rechaza CRLF)
+*.sh text eol=lf
+# PowerShell puede ir con CRLF
+*.ps1 text eol=crlf

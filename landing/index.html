@@ -52,7 +52,7 @@
     <h1>Deja de leer <em>45 mails</em> para decidir que hacer ahora.</h1>
     <p class="sub">InboxTriage clasifica cada correo nuevo en exactamente 3 cubetas — <b>Responder ahora / Responder despues / No responder</b> — cruzando Gmail con tu <code>contexto.json</code> de esta semana. Inferencia 100% local con QVAC. El cuerpo del mail nunca va a la nube.</p>
     <div class="cta">
-      <a class="btn btn-primary" id="repo-link" href="https://github.com/TU_USUARIO/inboxtriage" target="_blank">→ Clonar repo y demo 3 min</a>
+      <a class="btn btn-primary" id="repo-link" href="https://github.com/albcamargo/inboxtriage" target="_blank">→ Clonar repo y demo 3 min</a>
       <a class="btn btn-secondary" href="#como">Ver como funciona</a>
     </div>
     <div class="grid3">
@@ -83,7 +83,7 @@
 
 <div class="section">
   <h2>Instalacion operador no-autor — README.md</h2>
-  <div class="mono">git clone https://github.com/TU_USUARIO/inboxtriage && cd inboxtriage<br>npm install<br>cp .env.example .env # pon GOOGLE_CLIENT_ID<br>cp contexto.example.json contexto.json<br>npm run qvac:smoke # Scope 1 verde<br>npm run gmail:auth && npm run gmail:labels<br>npm run triage:15 # Scope 5 verde >=10 mails<br>npm run demo:3min # Scope 6 ensayo</div>
+  <div class="mono">git clone https://github.com/albcamargo/inboxtriage && cd inboxtriage<br>npm install<br>cp .env.example .env # pon GOOGLE_CLIENT_ID<br>cp contexto.example.json contexto.json<br>npm run qvac:smoke # Scope 1 verde<br>npm run gmail:auth && npm run gmail:labels<br>npm run triage:15 # Scope 5 verde >=10 mails<br>npm run demo:3min # Scope 6 ensayo</div>
   <p style="margin-top:12px;color:var(--muted)">Recorte permitido CICLO.md: si no hay token a las 5h, usa <code>npm run gmail:fixtures</code> y sigue con fixtures. Juez ve terminal + Gmail.</p>
 </div>
 
@@ -98,13 +98,13 @@
 
 <footer>
   <div>InboxTriage · Shape Up Pitch + Ciclo · PITCH.md es fuente de verdad · 16h fijas</div>
-  <div><a href="https://github.com/TU_USUARIO/inboxtriage" style="color:var(--fg)">GitHub Repo</a> · <a href="./PITCH.md" style="color:var(--fg)">PITCH.md</a> · <a href="./CICLO.md" style="color:var(--fg)">CICLO.md</a></div>
+  <div><a href="https://github.com/albcamargo/inboxtriage" style="color:var(--fg)">GitHub Repo</a> · <a href="./PITCH.md" style="color:var(--fg)">PITCH.md</a> · <a href="./CICLO.md" style="color:var(--fg)">CICLO.md</a></div>
 </footer>
 </div>
 
 <script>
 // Configura aqui tu repo real - ISPConfig solo sirve estaticos, asi que edita a mano
-const REPO_URL = "https://github.com/TU_USUARIO/inboxtriage";
+const REPO_URL = "https://github.com/albcamargo/inboxtriage";
 document.getElementById('repo-link').href = REPO_URL;
 // Auto-reemplaza links footer si estas en GitHub Pages
 if (location.hostname.includes('github.io')) {

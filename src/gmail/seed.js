@@ -7,6 +7,7 @@
 
 import 'dotenv/config';
 import fs from 'fs';
+import { getGmail } from './client.js';
 
 const args = process.argv;
 const getArg = (name, def) => {
@@ -92,100 +93,119 @@ const FIXTURES_50 = [
   { bucket: 'NoResponder', from: 'no-reply@encuesta.com', subject: `${PREFIX} Encuesta clima laboral - FYI`, body: `Encuesta clima laboral - participacion voluntaria. FYI.` },
 ];
 
+function toFixtureRecord(f, i) {
+  return {
+    id: `fixture-${i + 1}`,
+    from: f.from,
+    subject: f.subject,
+    snippet: f.body.replace(/\s+/g, ' ').slice(0, 180),
+    body: f.body,
+    bucket: f.bucket,
+  };
+}
+
+function writeLocalFixtures(selected) {
+  const records = selected.map(toFixtureRecord);
+  fs.writeFileSync('fixtures-50-demo.json', JSON.stringify(records, null, 2));
+  fs.writeFileSync('fixtures.json', JSON.stringify(records.slice(0, 15), null, 2));
+}
+
+function encodeRaw(f) {
+  const raw = [
+    `From: ${f.from}`,
+    `To: ${TO}`,
+    `Subject: ${f.subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=utf-8',
+    `X-Triage-Demo: ${f.bucket}`,
+    '',
+    f.body,
+    '',
+    '---',
+    'Correo sintetico InboxTriage - Aleph Hackathon',
+    `Bucket esperado: ${f.bucket}`,
+    `Prefijo [TRIAGE-DEMO] - ${new Date().toISOString()}`,
+  ].join('\r\n');
+  return Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function trashDemoMessages(gmail) {
+  let trashed = 0;
+  let pageToken;
+  do {
+    const { data } = await gmail.users.messages.list({
+      userId: 'me',
+      q: 'subject:"[TRIAGE-DEMO]"',
+      maxResults: 100,
+      pageToken,
+    });
+    for (const m of data.messages || []) {
+      await gmail.users.messages.trash({ userId: 'me', id: m.id });
+      trashed += 1;
+      console.log(`  Borrado ${m.id}`);
+    }
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return trashed;
+}
+
 async function main() {
   console.log(`=== Seeder 50 correos demo para ${TO} ===`);
-  console.log(`Modo: ${DRY_RUN ? 'DRY-RUN' : CLEAN ? 'CLEAN' : 'REAL GMAIL'}`);
+  console.log(`Modo: ${DRY_RUN ? 'DRY-RUN' : CLEAN ? 'CLEAN' : 'INSERT GMAIL'}`);
   console.log(`Contexto: ${contexto.on_the_plate?.length || 0} en plato, ${contexto.stakeholders?.length || 0} stakeholders`);
 
   const selected = FIXTURES_50.slice(0, COUNT);
-  const stats = { Ahora: selected.filter(f=>f.bucket==='Ahora').length, Despues: selected.filter(f=>f.bucket==='Despues').length, NoResponder: selected.filter(f=>f.bucket==='NoResponder').length };
+  const stats = {
+    Ahora: selected.filter((f) => f.bucket === 'Ahora').length,
+    Despues: selected.filter((f) => f.bucket === 'Despues').length,
+    NoResponder: selected.filter((f) => f.bucket === 'NoResponder').length,
+  };
   console.log(`Distribucion esperada: Ahora:${stats.Ahora} Despues:${stats.Despues} NoResponder:${stats.NoResponder}`);
-  console.log("");
+  console.log('');
 
   if (DRY_RUN) {
-    fs.writeFileSync('fixtures-50-demo.json', JSON.stringify(selected, null, 2));
-    fs.writeFileSync('fixtures.json', JSON.stringify(selected.slice(0,15), null, 2));
+    writeLocalFixtures(selected);
     console.log(`[DRY-RUN] Guardado fixtures-50-demo.json (${selected.length}) y fixtures.json (15)`);
-    console.log("Para probar triaje sin Gmail: npm run triage:15");
+    console.log('Para probar triaje sin Gmail: npm run triage:15');
     return;
   }
+
+  const gmail = getGmail();
 
   if (CLEAN) {
-    console.log("[CLEAN] Buscando mensajes con prefijo [TRIAGE-DEMO] para borrar...");
-    try {
-      const { google } = await import('googleapis');
-      const tokens = JSON.parse(fs.readFileSync('tokens.json','utf8'));
-      const oAuth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, process.env.GOOGLE_REDIRECT_URI);
-      oAuth2Client.setCredentials(tokens);
-      const gmail = google.gmail({version:'v1', auth:oAuth2Client});
-      const { data } = await gmail.users.messages.list({ userId: 'me', q: 'subject:"[TRIAGE-DEMO]"', maxResults: 100 });
-      console.log(`Encontrados ${data.messages?.length||0} mensajes demo`);
-      for (const m of data.messages||[]) {
-        await gmail.users.messages.trash({ userId: 'me', id: m.id });
-        console.log(`  Borrado ${m.id}`);
-      }
-      console.log("[CLEAN] OK");
-    } catch (e) {
-      console.error("Error clean:", e.message);
-    }
+    console.log('[CLEAN] Buscando mensajes con prefijo [TRIAGE-DEMO] para borrar...');
+    const trashed = await trashDemoMessages(gmail);
+    console.log(`[CLEAN] OK - ${trashed} mensajes a papelera`);
     return;
   }
 
-  // REAL GMAIL - crea mensajes via API
-  try {
-    const { google } = await import('googleapis');
-    const tokens = JSON.parse(fs.readFileSync('tokens.json','utf8'));
-    const oAuth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, process.env.GOOGLE_REDIRECT_URI);
-    oAuth2Client.setCredentials(tokens);
-    const gmail = google.gmail({version:'v1', auth:oAuth2Client});
-
-    let created = 0;
-    for (const f of selected) {
-      // Crea email raw RFC822 - solo a si mismo
-      const raw = [
-        `From: ${f.from}`,
-        `To: ${TO}`,
-        `Subject: ${f.subject}`,
-        `Content-Type: text/plain; charset=utf-8`,
-        `X-Triage-Demo: ${f.bucket}`,
-        `X-Triage-Context: ${contexto.on_the_plate?.[0]?.slice(0,50) || 'evento jueves'}`,
-        ``,
-        `${f.body}`,
-        ``,
-        `---`,
-        `Este es un correo de prueba sintetico para demo InboxTriage - Aleph Hackathon`,
-        `Bucket esperado: ${f.bucket}`,
-        `Cuenta: ${TO} - Sin datos reales - Prefijo [TRIAGE-DEMO] para borrado facil`,
-        `Generado: ${new Date().toISOString()}`
-      ].join('\r\n');
-
-      const encoded = Buffer.from(raw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-      try {
-        await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encoded } });
-        // Tambien marca como no leido para que triaje lo tome
-        created++;
-        process.stdout.write(`[${created}/${selected.length}] ${f.bucket} - ${f.subject.slice(0,60)}... OK\n`);
-        // Rate limit - evita 429 - CICLO.md
-        await new Promise(r => setTimeout(r, 600));
-      } catch (e) {
-        console.error(`  Error enviando ${f.subject}: ${e.message}`);
-        await new Promise(r => setTimeout(r, 1000));
-      }
+  let created = 0;
+  for (const f of selected) {
+    try {
+      await gmail.users.messages.insert({
+        userId: 'me',
+        requestBody: {
+          raw: encodeRaw(f),
+          labelIds: ['INBOX', 'UNREAD'],
+        },
+      });
+      created += 1;
+      process.stdout.write(`[${created}/${selected.length}] ${f.bucket} - ${f.subject.slice(0, 60)}... OK\n`);
+      await new Promise((r) => setTimeout(r, 400));
+    } catch (e) {
+      console.error(`  Error insertando ${f.subject}: ${e.message}`);
+      await new Promise((r) => setTimeout(r, 1000));
     }
-
-    console.log(`\n[SEED] Creados ${created}/${selected.length} correos en ${TO}`);
-    console.log("Todos con prefijo [TRIAGE-DEMO] - borrables con --clean");
-    console.log("Siguiente: npm run triage:batch -- --limit 50");
-    
-    // Guarda tambien fixtures local para CI
-    fs.writeFileSync('fixtures-50-demo.json', JSON.stringify(selected, null, 2));
-    
-  } catch (e) {
-    console.error("Error Gmail API:", e.message);
-    console.error("Asegura tokens.json valido y scope gmail.modify");
-    process.exit(1);
   }
+
+  writeLocalFixtures(selected);
+  console.log(`\n[SEED] Insertados ${created}/${selected.length} correos en inbox (no se enviaron)`);
+  console.log('Todos con prefijo [TRIAGE-DEMO] - borrables con --clean');
+  console.log('Siguiente: npm run triage:batch -- --limit 50');
 }
 
-main();
+main().catch((e) => {
+  console.error('Error Gmail API:', e.message);
+  console.error('Asegura tokens.json valido y scope gmail.modify');
+  process.exit(1);
+});

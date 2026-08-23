@@ -18,12 +18,13 @@ async function main(): Promise<void> {
 
   const loadMs = Date.now() - t0;
   const inferT0 = Date.now();
-  const result = completion({
+  const run = completion({
     modelId,
     history: [{ role: "user", content: PROMPT }],
     stream: false,
   });
-  const text = (await result.text).trim();
+  // API moderna del SDK 0.17: result.text esta deprecado; el reemplazo es final.contentText
+  const text = ((await run.final).contentText || "").trim();
   const inferMs = Date.now() - inferT0;
   await unloadModel({ modelId });
 

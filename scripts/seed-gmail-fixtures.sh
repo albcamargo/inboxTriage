@@ -1,46 +1,68 @@
 #!/bin/bash
-# scripts/seed-gmail-fixtures.sh - Crea 50 correos de prueba en Gmail para demo
-# Cuenta: acamargo@corefex.net - Solo envia a si mismo, no a terceros - Sin datos reales
-# Alineado a PITCH.md Frame Go (caso canonico) + contexto.example.json + CICLO.md Scope 5
+# Crea 50 correos de prueba en Gmail para demo.
 # Uso:
 #   bash scripts/seed-gmail-fixtures.sh --count 50 --to acamargo@corefex.net
 #   bash scripts/seed-gmail-fixtures.sh --dry-run
 #   bash scripts/seed-gmail-fixtures.sh --clean
 
-set -e
+set -euo pipefail
 
-TO="${1:-}"
 COUNT=50
+TARGET_EMAIL="acamargo@corefex.net"
 DRY_RUN=false
 CLEAN=false
-TARGET_EMAIL="acamargo@corefex.net"
+YES=false
 
-# Parse args
-for arg in "$@"; do
-  case $arg in
-    --count=*) COUNT="${arg#*=}" ;;
-    --to=*) TARGET_EMAIL="${arg#*=}" ;;
-    --dry-run) DRY_RUN=true ;;
-    --clean) CLEAN=true ;;
-    --count) COUNT="$2"; shift ;;
-    --to) TARGET_EMAIL="$2"; shift ;;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --count)
+      COUNT="$2"
+      shift 2
+      ;;
+    --count=*)
+      COUNT="${1#*=}"
+      shift
+      ;;
+    --to)
+      TARGET_EMAIL="$2"
+      shift 2
+      ;;
+    --to=*)
+      TARGET_EMAIL="${1#*=}"
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --clean)
+      CLEAN=true
+      shift
+      ;;
+    --yes|-y)
+      YES=true
+      shift
+      ;;
+    *)
+      echo "Argumento desconocido: $1"
+      echo "Uso: $0 [--count N] [--to email] [--dry-run] [--clean] [--yes]"
+      exit 1
+      ;;
   esac
 done
-
-# Si primer arg es numero, es count
-if [[ "$1" =~ ^[0-9]+$ ]]; then COUNT="$1"; fi
-if [[ "$1" == *"@*"* ]]; then TARGET_EMAIL="$1"; fi
 
 echo "=== InboxTriage Seeder - 50 correos demo ==="
 echo "Target: $TARGET_EMAIL"
 echo "Count: $COUNT"
 echo "Dry-run: $DRY_RUN"
 echo "Clean: $CLEAN"
-echo "Cuenta solicitada: acamargo@corefex.net (solo a si mismo, sin datos reales)"
 echo ""
 
-if [ "$TARGET_EMAIL" != "acamargo@corefex.net" ]; then
-  echo "WARN: target diferente a acamargo@corefex.net, continuando pero solo se envia a la cuenta autenticada"
+if [ "$DRY_RUN" = true ]; then
+  echo "[DRY-RUN] Generando fixtures sin Gmail..."
+  node src/gmail/seed.js --dry-run --count "$COUNT" --to "$TARGET_EMAIL"
+  echo "Fixtures generados en fixtures.json y fixtures-50-demo.json"
+  exit 0
 fi
 
 if [ ! -f "tokens.json" ]; then
@@ -50,7 +72,7 @@ if [ ! -f "tokens.json" ]; then
 fi
 
 if [ ! -f ".env" ]; then
-  echo "ERROR: .env no encontrado"
+  echo "ERROR: .env no encontrado. Copia .env.example a .env"
   exit 1
 fi
 
@@ -60,25 +82,21 @@ if [ "$CLEAN" = true ]; then
   exit 0
 fi
 
-if [ "$DRY_RUN" = true ]; then
-  echo "[DRY-RUN] Generando fixtures sin enviar a Gmail..."
-  node src/gmail/seed.js --dry-run --count "$COUNT" --to "$TARGET_EMAIL"
-  echo "Fixtures generados en fixtures.json y fixtures-50-demo.json"
-  exit 0
-fi
-
 echo "Se crearan $COUNT correos de prueba en $TARGET_EMAIL con prefijo [TRIAGE-DEMO]"
-echo "Todos son sinteticos, sin datos reales, alineados a contexto.example.json"
+echo "Se insertan en el buzon (no se envian a terceros)."
 echo ""
-read -p "Confirmar? (y/N): " CONFIRM
-if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
-  echo "Cancelado"
-  exit 0
+
+if [ "$YES" != true ] && [ -t 0 ]; then
+  read -r -p "Confirmar? (y/N): " CONFIRM
+  if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo "Cancelado"
+    exit 0
+  fi
 fi
 
 node src/gmail/seed.js --count "$COUNT" --to "$TARGET_EMAIL"
 
 echo ""
-echo "=== Seeder completo - Scope 5 listo ==="
+echo "=== Seeder completo ==="
 echo "Ahora corre: npm run triage:15 o npm run triage:batch -- --limit 50"
 echo "Para borrar demo: bash scripts/seed-gmail-fixtures.sh --clean"

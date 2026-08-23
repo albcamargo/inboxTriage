@@ -1,25 +1,26 @@
-# Environment & Secret files
+# Environment & secrets
 .env
 .env.local
 *.env
+!.env.example
 credentials.json
 token.json
+tokens.json
 
-# Node dependencies
+# Node
 node_modules/
 npm-debug.log*
 
-# System & OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Logs & build outputs
+# Logs, generated fixtures, models
 *.log
 dist/
 build/
 models/
-models/f2bade0bc5cd4a8c_Llama-3.2-1B-Instruct-Q4_0.gguf
-models/
 *.gguf
-tokens.json
-.env
+fixtures.json
+fixtures-50-demo.json
+qvac.config.local.mjs

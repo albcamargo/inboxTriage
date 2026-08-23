@@ -5,8 +5,10 @@
   "type": "module",
   "main": "src/triage/batch.js",
   "scripts": {
-    "qvac:smoke": "npm run smoke:qvac",
+    "qvac:smoke": "QVAC_CONFIG_PATH=./qvac.config.js npx tsx src/smoke/qvac-smoke.ts",
+    "smoke:qvac": "npm run qvac:smoke",
     "gmail:auth": "node src/gmail/auth.js",
+    "auth:gmail": "node src/gmail/auth.js",
     "gmail:labels": "node src/gmail/labels.js",
     "gmail:list": "node src/gmail/list.js",
     "gmail:fixtures": "node src/gmail/fixtures.js",
@@ -14,18 +16,15 @@
     "prompt:test": "node src/qvac/prompt-test.js",
     "triage:one": "node src/triage/one.js",
     "triage:15": "node src/triage/batch.js --limit 15",
-    "triage:batch": "tsx src/cli/triage-batch.ts",
+    "triage:batch": "node src/triage/batch.js",
     "triage:20": "node src/triage/batch.js --limit 20",
     "demo:3min": "bash demo-3min.sh",
     "demo:check-cloud": "grep -R \"api.openai.com\\|api.anthropic.com\\|generativelanguage.googleapis.com\" src/ || echo \"OK 0 llamadas cloud LLM\"",
+    "dashboard:api": "node src/server/api.js",
     "gmail:seed": "node src/gmail/seed.js",
     "gmail:seed:50": "node src/gmail/seed.js --count 50 --to acamargo@corefex.net",
     "gmail:seed:dry": "node src/gmail/seed.js --dry-run --count 50 --to acamargo@corefex.net",
-    "gmail:seed:clean": "node src/gmail/seed.js --clean --to acamargo@corefex.net",
-    "smoke:qvac": "QVAC_CONFIG_PATH=./qvac.config.js npx tsx src/smoke/qvac-smoke.ts",
-    "smoke:gmail": "tsx src/smoke/gmail-smoke.ts",
-    "triage": "tsx src/cli/triage.ts",
-    "auth:gmail": "npx tsx src/cli/auth-gmail.ts"
+    "gmail:seed:clean": "node src/gmail/seed.js --clean --to acamargo@corefex.net"
   },
   "keywords": [
     "shape-up",
@@ -38,12 +37,10 @@
     "@qvac/sdk": "^0.17.1",
     "dotenv": "^16.4.5",
     "googleapis": "^176.0.0",
-    "open": "^10.1.0"
+    "open": "^10.1.0",
+    "tsx": "^4.23.12"
   },
   "engines": {
     "node": ">=22.17"
-  },
-  "devDependencies": {
-    "tsx": "^4.23.12"
   }
 }
