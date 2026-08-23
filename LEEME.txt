@@ -43,6 +43,18 @@ PARA VOLVER A CLASIFICAR (por ejemplo, al día siguiente)
      Vuelve a correr iniciar — clasifica los no leídos nuevos y
      abre el panel.
 
+PARA APAGAR LA APP
+     Cierra la ventana de la terminal donde corre. Para encenderla
+     de nuevo: iniciar (o el acceso directo InboxTriage).
+
+PARA CAMBIAR DE CUENTA (o salir de la actual)
+       Windows:  acceso directo "InboxTriage - Cambiar de cuenta"
+                 (menú Inicio), o .\cambiar-cuenta.ps1
+       Linux:    ./cambiar-cuenta.sh
+     Apaga la app, cierra la sesión guardada y reabre la pantalla
+     de Google para elegir otra cuenta (que también debe estar en
+     la lista de usuarios de prueba). Tus "intereses" se conservan.
+
 PARA DESINSTALAR
      Borra la carpeta. En tu Gmail, borra las 3 etiquetas
      InboxTriage/* si quieres. Y revoca el acceso de la app en
