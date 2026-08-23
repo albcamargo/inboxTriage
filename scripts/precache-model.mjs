@@ -5,13 +5,16 @@
 // Uso: node scripts/precache-model.mjs   (respeta QVAC_MODEL y QVAC_CONFIG_PATH)
 
 import 'dotenv/config';
-import { loadModel, unloadModel, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M } from '@qvac/sdk';
+import { loadModel, unloadModel, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M, QWEN3_8B_INST_Q4_K_M } from '@qvac/sdk';
 
 process.env.QVAC_CONFIG_PATH ||= './qvac.config.js';
 
-const use1b = (process.env.QVAC_MODEL || '').includes('1b');
-const modelSrc = use1b ? LLAMA_3_2_1B_INST_Q4_0 : QWEN3_4B_INST_Q4_K_M;
-console.log(`[Precache] Modelo: ${use1b ? 'Llama 3.2 1B Q4 (~0.8 GB)' : 'Qwen3 4B Q4 (~2.4 GB)'} - cache segun qvac.config.js`);
+const env = (process.env.QVAC_MODEL || '').toLowerCase();
+const use1b = env.includes('1b');
+const use8b = env.includes('8b');
+const modelSrc = use1b ? LLAMA_3_2_1B_INST_Q4_0 : use8b ? QWEN3_8B_INST_Q4_K_M : QWEN3_4B_INST_Q4_K_M;
+const nombre = use1b ? 'Llama 3.2 1B Q4 (~0.8 GB)' : use8b ? 'Qwen3 8B Q4 (~4.7 GB)' : 'Qwen3 4B Q4 (~2.4 GB)';
+console.log(`[Precache] Modelo: ${nombre} - cache segun qvac.config.js`);
 
 const t0 = Date.now();
 const modelId = await loadModel({

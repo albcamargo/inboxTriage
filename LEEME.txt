@@ -1,0 +1,52 @@
+=================================================
+ InboxTriage — pruébalo en 3 pasos
+=================================================
+
+Tu Gmail, clasificado por una IA que corre EN TU COMPUTADOR.
+Ningún correo se envía a la nube. La app solo puede leer y
+etiquetar — nunca enviar ni borrar.
+
+REQUISITOS
+  - Windows 10/11 o Ubuntu 22+  (macOS también suele funcionar)
+  - Node.js 20 o superior  ->  https://nodejs.org
+  - 8 GB de RAM libres (16+ recomendado) y espacio para el modelo
+  - Una cuenta de Gmail
+
+ANTES DE EMPEZAR (importante)
+  La app está en modo de prueba de Google: para poder autorizar
+  tu Gmail, tu correo debe estar en la lista de usuarios de
+  prueba. Escríbenos con tu Gmail y te agregamos en un minuto.
+
+PASOS
+
+  1) INSTALAR (una sola vez)
+       Windows:  clic derecho en instalar.ps1 -> Ejecutar con PowerShell
+       Linux:    bash instalar.sh
+     Te preguntará qué modelo de IA quieres:
+       1 = Rápido (1B, ~0.8 GB)   2 = Recomendado (4B, ~2.4 GB)   3 = Preciso (8B, ~4.7 GB)
+
+  2) INICIAR
+       Windows:  .\iniciar.ps1
+       Linux:    bash iniciar.sh
+     La primera vez se abre el navegador para autorizar tu Gmail
+     (Google avisará que la app "no está verificada": es normal en
+     modo prueba — clic en "Continuar").
+
+  3) USAR
+     Se abre el panel en http://localhost:8000 con tu bandeja ya
+     clasificada en tres columnas. Ahí puedes leer cada correo,
+     corregir su sello (se re-etiqueta en tu Gmail) y escribir tus
+     "intereses de la semana" para afinar el criterio.
+     Las etiquetas también quedan visibles en tu Gmail normal.
+
+PARA VOLVER A CLASIFICAR (por ejemplo, al día siguiente)
+     Vuelve a correr iniciar — clasifica los no leídos nuevos y
+     abre el panel.
+
+PARA DESINSTALAR
+     Borra la carpeta. En tu Gmail, borra las 3 etiquetas
+     InboxTriage/* si quieres. Y revoca el acceso de la app en
+     https://myaccount.google.com/permissions
+
+Proyecto del Aleph Hackathon 2026 · IA local con QVAC (Tether)
+Web: https://inboxtriage.vercel.app

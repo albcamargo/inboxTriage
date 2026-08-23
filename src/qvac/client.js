@@ -4,14 +4,17 @@
  */
 
 import 'dotenv/config';
-import { completion, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M, loadModel, unloadModel } from '@qvac/sdk';
+import { completion, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M, QWEN3_8B_INST_Q4_K_M, loadModel, unloadModel } from '@qvac/sdk';
 
-// Qwen3 4B Q4 (~2.4 GB) por defecto: el 1B responde NO a casi todo y sus
-// respuestas terminaban descartadas. El 4B corre en CPU con 32 GB de RAM.
-// Para volver al 1B: QVAC_MODEL=llama-3.2-1b-instruct-q4 en .env
-const USE_1B = (process.env.QVAC_MODEL || '').includes('1b');
-const MODEL_SRC = USE_1B ? LLAMA_3_2_1B_INST_Q4_0 : QWEN3_4B_INST_Q4_K_M;
-const MODEL_NAME = USE_1B ? 'Llama 3.2 1B Q4' : 'Qwen3 4B Q4';
+// Modelo elegible con QVAC_MODEL en .env:
+//   *1b* -> Llama 3.2 1B (~0.8 GB, rapido, menos preciso)
+//   *8b* -> Qwen3 8B (~4.7 GB, el mas preciso; pide equipo con GPU o CPU fuerte)
+//   otro -> Qwen3 4B (~2.4 GB, recomendado; corre en CPU con 32 GB)
+const MODELO_ENV = (process.env.QVAC_MODEL || '').toLowerCase();
+const USE_1B = MODELO_ENV.includes('1b');
+const USE_8B = MODELO_ENV.includes('8b');
+const MODEL_SRC = USE_1B ? LLAMA_3_2_1B_INST_Q4_0 : USE_8B ? QWEN3_8B_INST_Q4_K_M : QWEN3_4B_INST_Q4_K_M;
+const MODEL_NAME = USE_1B ? 'Llama 3.2 1B Q4' : USE_8B ? 'Qwen3 8B Q4' : 'Qwen3 4B Q4';
 
 let singleton = null;
 
