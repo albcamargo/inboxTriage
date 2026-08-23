@@ -112,7 +112,7 @@ Cleanup of demo emails: `npm run gmail:seed:clean`.
 
 ## Demo video
 
-**[Watch the demo](https://www.youtube.com/watch?v=_lz6eJKJJ8U)**
+**[Watch the demo](https://www.youtube.com/watch?v=HVdajR69qtw)**
 
 [![InboxTriage panel — triaged inbox with reasons per stamp](docs/panel.jpg)](https://www.youtube.com/watch?v=HVdajR69qtw)
 
