@@ -48,6 +48,8 @@ PARA APAGAR LA APP
      de nuevo: iniciar (o el acceso directo InboxTriage).
 
 PARA CAMBIAR DE CUENTA (o salir de la actual)
+     En el panel: enlace "Cambiar de cuenta de Gmail" (abajo a la
+     izquierda). También sirve por fuera:
        Windows:  acceso directo "InboxTriage - Cambiar de cuenta"
                  (menú Inicio), o .\cambiar-cuenta.ps1
        Linux:    ./cambiar-cuenta.sh

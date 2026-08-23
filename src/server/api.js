@@ -18,6 +18,7 @@
  */
 
 import 'dotenv/config';
+import { spawn } from 'child_process';
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
@@ -248,6 +249,26 @@ const server = http.createServer(async (req, res) => {
         }) + '\n',
       );
       return responder(res, 200, { ok: true, label });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/salir') {
+      /* Cambiar de cuenta desde el panel: responde primero y delega en el
+         script cambiar-cuenta, que apaga este servidor, borra tokens.json y
+         triage.log (los intereses se conservan) y relanza la app con la
+         pantalla de Google para elegir otra cuenta. */
+      responder(res, 200, { ok: true });
+      setTimeout(() => {
+        const opciones = { cwd: process.cwd(), detached: true, stdio: 'ignore' };
+        if (process.platform === 'win32') {
+          if (fs.existsSync('CambiarCuenta.cmd')) {
+            spawn('cmd', ['/c', 'start', 'InboxTriage', 'CambiarCuenta.cmd'], opciones).unref();
+          } else {
+            spawn('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'cambiar-cuenta.ps1'], opciones).unref();
+          }
+        } else {
+          spawn('bash', ['cambiar-cuenta.sh'], opciones).unref();
+        }
+      }, 300);
+      return;
     }
     if (req.method === 'GET' && !url.pathname.startsWith('/api/')) {
       return servirPanel(res, url.pathname);
