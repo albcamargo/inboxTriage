@@ -15,14 +15,15 @@ A local panel (dashboard) completes the loop: see the triaged inbox with the rea
 for every stamp, correct a wrong stamp (re-labels in Gmail), and edit the week's
 interests (rewrites `contexto.json`).
 
-```
-Gmail inbox ----> 4 closed questions ----> QVAC local model ----> SI / NO / INCIERTO
-                  (prompt contract)        (@qvac/sdk)                  |
-contexto.json ---------------------------------------------> policy.js (code, not LLM)
-                                                                        |
-                          Gmail label + JSONL audit log <---------------+
-                                        |
-                          local panel (localhost:8642)
+```mermaid
+flowchart TD
+    G["Gmail inbox"] --> Q["4 closed questions<br>(prompt contract)"]
+    Q --> M["QVAC local model<br>(@qvac/sdk)"]
+    M --> R["SI / NO / INCIERTO"]
+    C["contexto.json<br>(what matters this week)"] --> P
+    R --> P["policy.js<br>(deterministic code, not LLM)"]
+    P --> L["Gmail label + JSONL audit log"]
+    L --> D["local panel (localhost:8642)"]
 ```
 
 ## QVAC integration — permalinks
@@ -91,7 +92,7 @@ cp contexto.example.json contexto.json   # edit: your week's priorities (max 5)
 ```
 
 1. **Gmail OAuth** (one time): create a Desktop OAuth client in Google Cloud
-   (Gmail API enabled, redirect `http://localhost:3000/oauth2callback`), put
+   (Gmail API enabled, redirect `http://localhost:3210/oauth2callback`), put
    ID/secret in `.env`, then `npm run gmail:auth` and `npm run gmail:labels`
    (creates the 3 `InboxTriage/*` labels). Tokens stay on disk, gitignored.
 2. **Model smoke test**: `npm run qvac:smoke` — downloads the model on first run
@@ -111,7 +112,12 @@ Cleanup of demo emails: `npm run gmail:seed:clean`.
 
 ## Demo video
 
-**[pending — add link before submitting]**
+**[Watch the demo](https://www.youtube.com/watch?v=HVdajR69qtw)**
+
+[![InboxTriage panel — triaged inbox with reasons per stamp](docs/panel.jpg)](https://www.youtube.com/watch?v=HVdajR69qtw)
+
+**Try it without cloning:** [inboxtriage.vercel.app](https://inboxtriage.vercel.app) —
+one-click Windows installer and Linux zip ([latest release](https://github.com/CoKeFish/inboxTriage/releases/latest)).
 
 ## Privacy
 

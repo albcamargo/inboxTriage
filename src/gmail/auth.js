@@ -15,7 +15,9 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
 }
 
 const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-const authUrl = oAuth2Client.generateAuthUrl({ access_type: 'offline', scope: SCOPES, prompt: 'consent' });
+// select_account: Google muestra el selector de cuentas aunque el navegador
+// tenga una sola sesion — sin esto, "cambiar de cuenta" reelegiria la misma.
+const authUrl = oAuth2Client.generateAuthUrl({ access_type: 'offline', scope: SCOPES, prompt: 'consent select_account' });
 
 console.log('[Gmail] Abriendo browser para OAuth...');
 console.log(`[Gmail] URL: ${authUrl}`);

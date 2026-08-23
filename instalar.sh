@@ -17,7 +17,15 @@ echo "Instalando dependencias (1-2 min)..."
 npm install --no-fund --no-audit >/dev/null
 echo "Dependencias OK"
 
-# 3. Eleccion de modelo
+# 3. Configuracion
+# El zip de descarga trae .env listo; si clonaste el repo, se crea desde el
+# ejemplo y tendras que poner tus credenciales de Google (README paso 2).
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "AVISO: .env creado desde .env.example — te faltara GOOGLE_CLIENT_ID/SECRET (ver README)."
+fi
+
+# 4. Eleccion de modelo
 echo ""
 echo "Elige el modelo de IA (se descarga una sola vez):"
 echo "  1) Rapido      - Llama 1B  (~0.8 GB)  menos preciso"
