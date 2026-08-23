@@ -122,13 +122,14 @@ class QvacTriageClient {
       return 'NO';
     }
 
-    const result = completion({
+    const run = completion({
       modelId: this.modelId,
       history: [{ role: 'user', content: cleanPrompt }],
       stream: false,
     });
-    const text = await result.text;
-    return (text || '').slice(0, MAX_TOKENS * 8);
+    // API moderna del SDK 0.17: result.text esta deprecado; el reemplazo es final.contentText
+    const final = await run.final;
+    return (final.contentText || '').slice(0, MAX_TOKENS * 8);
   }
 
   async askFourQuestions(emailText, contexto) {
