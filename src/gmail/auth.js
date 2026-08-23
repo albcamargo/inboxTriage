@@ -27,7 +27,7 @@ const server = http.createServer(async (req, res) => {
     if (!code) { res.end('No code'); return; }
     const { tokens } = await oAuth2Client.getToken(code);
     fs.writeFileSync('tokens.json', JSON.stringify(tokens, null, 2));
-    console.log('[Gmail] tokens.json guardado (gitignoreado) - Scope 2 VERDE');
+    console.log('[Gmail] tokens.json guardado (gitignoreado, nunca subir a git)');
     res.end('<h1>Auth OK - puedes cerrar esta ventana y volver a terminal</h1>');
     server.close();
   }

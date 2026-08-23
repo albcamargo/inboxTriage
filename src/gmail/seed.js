@@ -1,7 +1,7 @@
 /**
  * src/gmail/seed.js - Crea 50 correos de prueba sinteticos en Gmail
  * Cuenta: acamargo@corefex.net - Solo a si mismo - Sin datos reales
- * Alineado a PITCH.md Frame Go + contexto.example.json + CICLO.md Scope 5
+ * Basado en contexto.example.json
  * Uso: node src/gmail/seed.js --count 50 --to acamargo@corefex.net --dry-run --clean
  */
 
@@ -166,7 +166,7 @@ async function main() {
         // Tambien marca como no leido para que triaje lo tome
         created++;
         process.stdout.write(`[${created}/${selected.length}] ${f.bucket} - ${f.subject.slice(0,60)}... OK\n`);
-        // Rate limit - evita 429 - CICLO.md
+        // Rate limit - evita 429
         await new Promise(r => setTimeout(r, 600));
       } catch (e) {
         console.error(`  Error enviando ${f.subject}: ${e.message}`);

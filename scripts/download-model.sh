@@ -1,6 +1,5 @@
 #!/bin/bash
 # scripts/download-model.sh - Baja modelo QVAC 1B Q4 al volumen - Ubuntu 24.04
-# Alineado a PITCH.md RNF-04 CPU-first, RNF-03 un proceso un modelo, CICLO.md Scope 1
 # Uso: bash scripts/download-model.sh
 # Uso Docker: docker compose run --rm app bash scripts/download-model.sh
 # Uso con modelo custom: QVAC_MODEL=llama-3.2-3b-instruct-q4 bash scripts/download-model.sh
@@ -61,9 +60,9 @@ else
   echo "[2/3] Modelo ya existe: $MODEL_FILE ($(du -h "$MODEL_FILE" | cut -f1)) - skip download"
 fi
 
-# 3. Verificacion - Scope 1 Pulso QVAC
+# 3. Verificacion
 echo ""
-echo "[3/3] Verificacion - Scope 1 Pulso QVAC"
+echo "[3/3] Verificacion"
 if [ -f "$MODEL_FILE" ]; then
   SIZE=$(stat -c%s "$MODEL_FILE" 2>/dev/null || stat -f%z "$MODEL_FILE" 2>/dev/null || echo "0")
   SIZE_MB=$((SIZE / 1024 / 1024))
@@ -82,7 +81,7 @@ if [ -f "$MODEL_FILE" ]; then
   fi
   
   echo ""
-  echo "=== Descarga completa - Scope 1 VERDE ==="
+  echo "=== Descarga completa ==="
   echo "Modelo listo en: $MODEL_FILE"
   echo "Volumen Docker: qvac-models -> /app/models"
   echo "Siguiente: npm run qvac:smoke && npm run triage:15"

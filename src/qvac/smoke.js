@@ -1,10 +1,10 @@
 import 'dotenv/config';
 const start = Date.now();
-console.log('[QVAC] Pulso - Scope 1 - Iniciando smoke test...');
+console.log('[QVAC] Iniciando smoke test...');
 
 let qvacLoaded = false;
 try {
-  // Intento real con @qvac/sdk - alineado a PITCH.md RNF-03/04
+  // Intento real con @qvac/sdk
   const { QvacClient } = await import('@qvac/sdk');
   const client = new QvacClient();
   const modelName = process.env.QVAC_MODEL || 'llama-3.2-1b-instruct-q4';
@@ -23,9 +23,9 @@ try {
 
 const elapsed = ((Date.now() - start)/1000).toFixed(1);
 if (qvacLoaded) {
-  console.log(`[QVAC] Modelo OK 1B Q4 cargado 1 vez - Tiempo: ${elapsed}s - Scope 1 VERDE`);
+  console.log(`[QVAC] Modelo OK 1B Q4 cargado 1 vez - Tiempo: ${elapsed}s`);
   process.exit(0);
 } else {
-  console.error('[QVAC] Scope 1 ROJO - no hay producto sin modelo');
+  console.error('[QVAC] Smoke FAILED - no hay modelo cargado');
   process.exit(1);
 }

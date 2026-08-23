@@ -20,6 +20,6 @@ async function ensureLabels() {
       console.log(`[Gmail] Label existe: ${name}`);
     }
   }
-  console.log('[Gmail] 3 labels OK - Scope 2 VERDE');
+  console.log('[Gmail] 3 labels OK');
 }
 ensureLabels().catch(e => { console.error(e.message); process.exit(1); });

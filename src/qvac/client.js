@@ -1,8 +1,7 @@
 /**
- * src/qvac/client.js - Cliente QVAC real para InboxTriage
- * Alineado a PITCH.md RNF-03 (un proceso, un modelo), RNF-04 (CPU-first 1B Q4), RNF-06 (ES/EN)
- * y CICLO.md Scope 1 (Pulso) + Scope 3 (contrato SI/NO/INCIERTO) + Scope 5 (no tumba lote)
- * 
+ * src/qvac/client.js - Cliente QVAC para InboxTriage
+ * Un proceso, un modelo cargado. Contrato de respuestas SI/NO/INCIERTO.
+ *
  * Uso:
  *   import { getQvacClient } from './client.js'
  *   const qvac = await getQvacClient()
@@ -89,7 +88,7 @@ class QvacTriageClient {
   async completion(prompt) {
     const cleanPrompt = prompt.slice(0, 2000); // RNF: truncar, no enviar mail completo largo
     if (this.isMock) {
-      // Mock deterministico para demo sin modelo - alineado a caso canonico PITCH.md
+      // Mock determinístico para desarrollo sin modelo
       const lower = cleanPrompt.toLowerCase();
       if (lower.includes('catering') || lower.includes('produccion@venue') || lower.includes('ana perez')) return 'SI';
       if (lower.includes('jueves') || lower.includes('cierre lista') || lower.includes('auditorio')) return 'SI';
@@ -117,7 +116,7 @@ class QvacTriageClient {
     if (!text) return { es_stakeholder: 'INCIERTO', bloquea_evento: 'INCIERTO', pide_accion: 'INCIERTO', es_fyi: 'INCIERTO' };
 
     if (SINGLE_COMPLETION) {
-      // Recorte permitido CICLO.md: 1 completion con 4 preguntas si QVAC lento
+      // Modo alternativo: 1 completion con las 4 preguntas si el modelo es lento
       const prompt = SINGLE_PROMPT(contexto).replace('{text}', text);
       const raw = await this.completion(prompt);
       const parsed = parseJsonAnswers(raw);
@@ -139,7 +138,7 @@ class QvacTriageClient {
           const raw = await this.completion(prompt);
           results[key] = normalizeAnswer(raw);
         } catch (e) {
-          console.warn(`[QVAC] Error pregunta ${key}: ${e.message} -> INCIERTO (no tumba lote - Scope 5)`);
+          console.warn(`[QVAC] Error pregunta ${key}: ${e.message} -> INCIERTO (el lote continúa)`);
           results[key] = 'INCIERTO';
         }
       }
@@ -154,14 +153,14 @@ export async function getQvacClient() {
   let sdkClient = null;
   try {
     const { QvacClient } = await import('@qvac/sdk');
-    console.log(`[QVAC] Cargando modelo ${DEFAULT_MODEL} (un proceso, un modelo - RNF-03, CPU-first RNF-04)`);
+    console.log(`[QVAC] Cargando modelo ${DEFAULT_MODEL} (un proceso, un modelo cargado)`);
     const client = new QvacClient();
     await client.loadModel(DEFAULT_MODEL);
     sdkClient = client;
-    console.log('[QVAC] Modelo OK - Scope 1 VERDE');
+    console.log('[QVAC] Modelo OK');
   } catch (e) {
     console.warn(`[QVAC] @qvac/sdk no disponible o fallo carga (${e.message}) - usando mock deterministico para no bloquear demo`);
-    console.warn('[QVAC] En prod, asegura npm install y modelo descargado. Recorte SINGLE_COMPLETION=true si >30s/mail');
+    console.warn('[QVAC] En prod, asegura npm install y modelo descargado. Usa QVAC_SINGLE_COMPLETION=true si va lento (>30s/mail)');
   }
 
   singleton = new QvacTriageClient(sdkClient);

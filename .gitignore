@@ -1,25 +1,26 @@
-# Environment & Secret files
+# Secretos y credenciales — nunca subir
 .env
 .env.local
 *.env
 credentials.json
 token.json
+tokens.json
 
-# Node dependencies
+# Modelos de IA (descargados con scripts/download-model.sh)
+models/
+*.gguf
+
+# Dependencias
 node_modules/
 npm-debug.log*
 
-# System & OS files
-.DS_Store
-Thumbs.db
-
-# Logs & build outputs
+# Artefactos generados en ejecución
 *.log
+fixtures.json
+fixtures-50-demo.json
 dist/
 build/
-models/
-models/f2bade0bc5cd4a8c_Llama-3.2-1B-Instruct-Q4_0.gguf
-models/
-*.gguf
-tokens.json
-.env
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

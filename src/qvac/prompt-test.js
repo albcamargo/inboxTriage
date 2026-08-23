@@ -1,4 +1,4 @@
-console.log('[Prompt] Test contrato SI/NO/INCIERTO - Scope 3');
+console.log('[Prompt] Test contrato SI/NO/INCIERTO');
 
 const casos = [
   { id: 'canonico-A', texto: 'catering@proveedor-evento.com pide cierre lista evento jueves', esperado: { stakeholder: 'SI', bloquea: 'SI' } },
@@ -6,7 +6,7 @@ const casos = [
 ];
 
 function mockCompletion(texto) {
-  // Mock del prompt de 4 preguntas - alineado a PITCH.md
+  // Mock del prompt de 4 preguntas
   const lower = texto.toLowerCase();
   return {
     es_stakeholder: lower.includes('catering') || lower.includes('produccion') || lower.includes('ana perez') ? 'SI' : 'NO',
@@ -24,5 +24,5 @@ for (const c of casos) {
   if (c.id==='canonico-B' && res.es_fyi!=='SI') ok=false;
 }
 
-if (ok) console.log('[Prompt] Test OK - Parser SI/NO/INCIERTO verde - caso canonico pasa');
+if (ok) console.log('[Prompt] Test OK - Parser SI/NO/INCIERTO - caso canonico pasa');
 else { console.error('[Prompt] Test FAIL'); process.exit(1); }

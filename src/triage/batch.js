@@ -10,7 +10,7 @@ const args = process.argv;
 const limitIdx = args.indexOf('--limit');
 const limit = limitIdx>=0 ? parseInt(args[limitIdx+1]) : batchSize;
 
-console.log(`[Triage BATCH] Scope 5 - Lote ${limit} - Iniciando...`);
+console.log(`[Triage BATCH] Lote ${limit} - Iniciando...`);
 
 const contexto = JSON.parse(fs.readFileSync(ctxPath, 'utf8'));
 
@@ -44,7 +44,7 @@ try {
     messages.push({ id:m.id, text: subj + ' ' + (msg.data.snippet||'') });
   }
 } catch {
-  console.log('[Triage] Sin Gmail token - usando fixtures.json (recorte CICLO.md)');
+  console.log('[Triage] Sin Gmail token - usando fixtures.json');
   try {
     const fix = JSON.parse(fs.readFileSync('fixtures.json','utf8'));
     messages = fix.slice(0, limit).map(f => ({ id:f.id, text: f.subject+' '+f.snippet }));
@@ -77,4 +77,4 @@ for (const m of messages) {
 console.log('\n[Triage BATCH] Resumen:');
 console.log(`  Ahora: ${stats.Ahora} | Despues: ${stats.Despues} | NoResponder: ${stats.NoResponder}`);
 console.log(`  Log: ${logPath}`);
-console.log(`  Scope 5 VERDE si >=10 etiquetados y ningun parse tumba lote`);
+console.log(`  OK si >=10 etiquetados; un parse roto no detiene el lote`);

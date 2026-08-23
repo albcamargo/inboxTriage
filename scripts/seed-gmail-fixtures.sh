@@ -1,7 +1,7 @@
 #!/bin/bash
 # scripts/seed-gmail-fixtures.sh - Crea 50 correos de prueba en Gmail para demo
 # Cuenta: acamargo@corefex.net - Solo envia a si mismo, no a terceros - Sin datos reales
-# Alineado a PITCH.md Frame Go (caso canonico) + contexto.example.json + CICLO.md Scope 5
+# Basado en contexto.example.json
 # Uso:
 #   bash scripts/seed-gmail-fixtures.sh --count 50 --to acamargo@corefex.net
 #   bash scripts/seed-gmail-fixtures.sh --dry-run
@@ -79,6 +79,6 @@ fi
 node src/gmail/seed.js --count "$COUNT" --to "$TARGET_EMAIL"
 
 echo ""
-echo "=== Seeder completo - Scope 5 listo ==="
+echo "=== Seeder completo ==="
 echo "Ahora corre: npm run triage:15 o npm run triage:batch -- --limit 50"
 echo "Para borrar demo: bash scripts/seed-gmail-fixtures.sh --clean"

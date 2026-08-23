@@ -1,4 +1,4 @@
-console.log('[Gmail] Modo fixtures - recorte permitido CICLO.md Scope 2 si no hay token a las 5h');
+console.log('[Gmail] Modo fixtures - genera casos de prueba para correr sin token');
 import fs from 'fs';
 const fixtures = [
   { id: 'fixture-1', from: 'catering@proveedor-evento.com', subject: 'Cierre lista invitados evento jueves - urgente', snippet: 'Necesitamos cierre lista invitados antes martes 18h para catering' },

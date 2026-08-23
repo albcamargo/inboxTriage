@@ -1,5 +1,5 @@
 #!/bin/bash
-# demo-3min.sh - Ensayo demo 3 minutos - Alineado a CICLO.md Scope 6 y PITCH.md Launch Brief
+# demo-3min.sh - Ensayo de la demo de 3 minutos
 set -e
 
 echo "=== InboxTriage Demo 3 min - Aleph Hackathon - Sponsor Tether/QVAC ==="
@@ -40,4 +40,4 @@ echo ""
 echo "Repo: $(git remote get-url origin 2>/dev/null || echo 'local repo')"
 echo "Landing: ./landing/index.html -> link a repo"
 echo ""
-echo "=== Demo OK - 3 min - Scope 6 VERDE ==="
+echo "=== Demo OK - 3 min ==="
