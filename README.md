@@ -22,7 +22,7 @@ contexto.json ---------------------------------------------> policy.js (code, no
                                                                         |
                           Gmail label + JSONL audit log <---------------+
                                         |
-                          local panel (localhost:8000)
+                          local panel (localhost:8642)
 ```
 
 ## QVAC integration — permalinks
@@ -101,7 +101,7 @@ cp contexto.example.json contexto.json   # edit: your week's priorities (max 5)
 4. **Triage**: `npm run triage:batch -- --limit 50` (or `--inbox` for your real
    unread inbox, or `--fixtures` for no-Gmail dry runs). Watch the labels appear
    in Gmail.
-5. **Panel**: `npm run dashboard:api` → http://localhost:8000 — triaged inbox,
+5. **Panel**: `npm run dashboard:api` → http://localhost:8642 — triaged inbox,
    stamp corrections, weekly interests. (Panel frontend lives in
    [inboxtriage-landing/dashboard](https://github.com/CoKeFish/inboxtriage-landing);
    point `DASHBOARD_DIR` at it or use the deployed panel, which auto-detects the
@@ -127,7 +127,7 @@ src/policy.js         <- answers -> label, deterministic, in code
 src/triage/batch.js   <- Gmail -> QVAC -> labels + JSONL log
 src/triage/one.js     <- single-email triage
 src/gmail/*           <- OAuth, labels, list, seeder (googleapis)
-src/server/api.js     <- local panel API (:8000) + serves the panel
+src/server/api.js     <- local panel API (:8642) + serves the panel
 contexto.json         <- what matters this week (the user edits this)
 docs/DEMO-50.md       <- operator runbook (Spanish): full 50-email judge demo
 ```

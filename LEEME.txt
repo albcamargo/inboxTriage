@@ -33,7 +33,7 @@ PASOS
      modo prueba — clic en "Continuar").
 
   3) USAR
-     Se abre el panel en http://localhost:8000 con tu bandeja ya
+     Se abre el panel en http://localhost:8642 con tu bandeja ya
      clasificada en tres columnas. Ahí puedes leer cada correo,
      corregir su sello (se re-etiqueta en tu Gmail) y escribir tus
      "intereses de la semana" para afinar el criterio.

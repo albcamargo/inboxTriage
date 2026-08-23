@@ -11,7 +11,10 @@
  * del propio usuario. CORS abierto + soporte del preflight Private Network
  * Access de Chrome (necesario cuando el panel se sirve desde un dominio publico).
  *
- * Uso: npm run dashboard:api   (puerto 8000; cambiar con DASHBOARD_API_PORT)
+ * Uso: npm run dashboard:api   (puerto 8642; cambiar con DASHBOARD_API_PORT)
+ * 8642 y no 8000: el 8000 lo ocupa medio mundo (Python, Django, etc.) y un
+ * choque de puerto tumbaria el panel. La landing sondea 8642 y luego 8000
+ * (instalaciones viejas).
  */
 
 import 'dotenv/config';
@@ -20,7 +23,7 @@ import http from 'http';
 import path from 'path';
 import { applyTriageLabel, getGmail, getTriageLabelIds } from '../gmail/client.js';
 
-const PORT = parseInt(process.env.DASHBOARD_API_PORT || '8000', 10);
+const PORT = parseInt(process.env.DASHBOARD_API_PORT || '8642', 10);
 const LOG = process.env.LOG_PATH || './triage.log';
 const CTX = process.env.CONTEXTO_PATH || './contexto.json';
 // Carpeta del panel (frontend). Si existe, este server la sirve en / — mismo

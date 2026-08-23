@@ -12,6 +12,6 @@ if (-not (Test-Path tokens.json)) {
 Write-Host "Clasificando tus correos no leidos con el modelo local..."
 node src/triage/batch.js --inbox --limit 15
 
-Write-Host "Abriendo el panel en http://localhost:8000 ..."
-Start-Process "http://localhost:8000"
+Write-Host "Abriendo el panel en http://localhost:8642 ..."
+Start-Process "http://localhost:8642"
 npm run dashboard:api
