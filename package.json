@@ -1,0 +1,38 @@
+{
+  "name": "inboxtriage",
+  "version": "0.1.0",
+  "description": "InboxTriage - Triaje local Gmail 3 cubetas con QVAC - Aleph Hackathon",
+  "type": "module",
+  "main": "src/triage/batch.js",
+  "scripts": {
+    "qvac:smoke": "node src/qvac/smoke.js",
+    "gmail:auth": "node src/gmail/auth.js",
+    "gmail:labels": "node src/gmail/labels.js",
+    "gmail:list": "node src/gmail/list.js",
+    "gmail:fixtures": "node src/gmail/fixtures.js",
+    "contexto:validate": "node src/contexto/validate.js",
+    "prompt:test": "node src/qvac/prompt-test.js",
+    "triage:one": "node src/triage/one.js",
+    "triage:15": "node src/triage/batch.js --limit 15",
+    "triage:batch": "node src/triage/batch.js",
+    "triage:20": "node src/triage/batch.js --limit 20",
+    "demo:3min": "bash demo-3min.sh",
+    "demo:check-cloud": "grep -R \"api.openai.com\\|api.anthropic.com\\|generativelanguage.googleapis.com\" src/ || echo \"OK 0 llamadas cloud LLM\""
+  },
+  "keywords": [
+    "shape-up",
+    "qvac",
+    "gmail",
+    "triage",
+    "local-llm"
+  ],
+  "dependencies": {
+    "@qvac/sdk": "^0.1.0",
+    "googleapis": "^128.0.0",
+    "dotenv": "^16.4.5",
+    "open": "^10.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,46 @@
+# docker-compose.yml - Ubuntu 24.04 + QVAC + volumen models - Alineado a PITCH.md + CICLO.md
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inboxtriage:ubuntu24-qvac
+    container_name: inboxtriage-app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - qvac-models:/app/models
+      - ./triage.log:/app/triage.log
+    env_file:
+      - .env
+    environment:
+      - QVAC_MODEL=${QVAC_MODEL:-llama-3.2-1b-instruct-q4}
+      - QVAC_MODELS_PATH=/app/models
+      - QVAC_SINGLE_COMPLETION=${QVAC_SINGLE_COMPLETION:-false}
+      - CONTEXTO_PATH=/app/contexto.json
+      - LOG_PATH=/app/triage.log
+      - GMAIL_BATCH_SIZE=${GMAIL_BATCH_SIZE:-15}
+      - GOOGLE_REDIRECT_URI=http://localhost:3000/oauth2callback
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  landing:
+    image: nginx:alpine
+    container_name: inboxtriage-landing
+    volumes:
+      - ./landing:/usr/share/nginx/html:ro
+      - ./landing/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    profiles:
+      - landing
+
+volumes:
+  qvac-models:
+    name: inboxtriage-qvac-models
+    driver: local

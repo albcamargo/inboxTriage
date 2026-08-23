@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InboxTriage — Triaje local Gmail en 3 cubetas | QVAC x Aleph</title>
+<meta name="description" content="Clasifica cada correo en Responder ahora / Después / No responder cruzando Gmail con tu contexto semanal. 100% local con QVAC, sin cloud LLM.">
+<style>
+  :root { --bg:#0a0a0b; --fg:#f5f5f0; --muted:#9a9a93; --accent:#e8ff59; --card:#17171a; --border:#2a2a2e; --ahora:#e8ff59; --despues:#a3a3ff; --no:#ff8a8a; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family: ui-sans-system, -apple-system, Inter, Segoe UI, sans-serif; background:var(--bg); color:var(--fg); line-height:1.6;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px}
+  header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--border)}
+  .logo{font-weight:800;letter-spacing:-0.02em;font-size:20px}
+  .logo span{color:var(--accent)}
+  .badge{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:999px;color:var(--muted)}
+  .hero{display:grid;grid-template-columns:1.2fr 0.8fr;gap:40px;padding:72px 0 40px}
+  h1{font-size:56px;line-height:0.95;letter-spacing:-0.04em;font-weight:800}
+  h1 em{font-style:normal;background:var(--accent);color:#000;padding:0 10px;border-radius:4px}
+  .sub{margin-top:18px;color:var(--muted);font-size:18px;max-width:48ch}
+  .cta{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;border:1px solid transparent}
+  .btn-primary{background:var(--accent);color:#000}
+  .btn-secondary{background:var(--card);color:var(--fg);border-color:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+  .label{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px}
+  .cube{border-left:3px solid var(--border);padding-left:12px}
+  .cube.ahora{border-color:var(--ahora)}
+  .cube.despues{border-color:var(--despues)}
+  .cube.no{border-color:var(--no)}
+  .cube strong{display:block;font-size:18px}
+  .cube span{color:var(--muted);font-size:14px}
+  .section{padding:48px 0;border-top:1px solid var(--border)}
+  h2{font-size:28px;letter-spacing:-0.03em;margin-bottom:12px}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; background:#111; border:1px solid var(--border); border-radius:10px; padding:14px; overflow:auto; color:#d4d4c9}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px}
+  .check{color:var(--accent)}
+  footer{padding:32px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  @media(max-width:800px){ .hero{grid-template-columns:1fr} h1{font-size:42px} .grid3{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">Inbox<span>Triage</span></div>
+  <div class="badge">Aleph Hackathon 2026 · Sponsor Tether / QVAC · Ubuntu 24.04 · 16h Appetite</div>
+</header>
+
+<div class="hero">
+  <div>
+    <h1>Deja de leer <em>45 mails</em> para decidir que hacer ahora.</h1>
+    <p class="sub">InboxTriage clasifica cada correo nuevo en exactamente 3 cubetas — <b>Responder ahora / Responder despues / No responder</b> — cruzando Gmail con tu <code>contexto.json</code> de esta semana. Inferencia 100% local con QVAC. El cuerpo del mail nunca va a la nube.</p>
+    <div class="cta">
+      <a class="btn btn-primary" id="repo-link" href="https://github.com/TU_USUARIO/inboxtriage" target="_blank">→ Clonar repo y demo 3 min</a>
+      <a class="btn btn-secondary" href="#como">Ver como funciona</a>
+    </div>
+    <div class="grid3">
+      <div class="cube ahora"><strong>Ahora</strong><span>Stakeholder + bloquea evento jueves + pide accion</span></div>
+      <div class="cube despues"><strong>Despues</strong><span>Requiere accion pero no bloquea esta semana</span></div>
+      <div class="cube no"><strong>NoResponder</strong><span>FYI, newsletter, CC masivo, comunicados rutina</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="label">Evidencia software real (Scope 5 verde)</div>
+    <div class="mono" id="log-demo">[QVAC] Modelo OK 1B Q4 cargado 1 vez - 2.3s<br>[1/15] catering@... -> Ahora (SI/SI/SI/NO)<br>[2/15] direccion@... -> NoResponder (NO/NO/NO/SI)<br>[3/15] produccion@... -> Ahora (SI/SI/NO/NO)<br>...<br>Resumen: Ahora:3 Despues:9 NoResponder:3<br>Log: ./triage.log<br>grep cloud LLM: OK 0 llamadas</div>
+    <div style="margin-top:16px" class="label">Caso canonico PITCH.md Frame Go</div>
+    <div class="mono">A = catering@proveedor-evento.com "cierre lista invitados jueves" => Ahora<br>B = comunicado bienestar director => NoResponder</div>
+    <div style="margin-top:16px" class="label">Stack - PITCH.md RNF</div>
+    <div class="mono">Node + @qvac/sdk + googleapis<br>Ubuntu 24.04 LTS 32GB CPU-first<br>RNF-02 tokens solo disco, RNF-03 1 proceso 1 modelo</div>
+  </div>
+</div>
+
+<div class="section" id="como">
+  <h2>Como funciona — Breadboard</h2>
+  <div class="mono">[Gmail API list UNREAD] → [Node Orquestador: text/plain + contexto.json] → [QVAC SDK: 4 preguntas SI/NO/INCIERTO] → [Policy codigo: 3 labels] → [Gmail modify + triage.log]</div>
+  <div class="steps">
+    <div class="card"><div class="label">1. Pulso QVAC</div><strong>Scope 1 no se recorta</strong><br><span style="color:var(--muted)">smoke.js carga Llama 3.2 1B Q4 una vez en CPU</span></div>
+    <div class="card"><div class="label">2. Gmail cableado</div><strong>OAuth + 3 labels</strong><br><span style="color:var(--muted)">InboxTriage/Ahora, Despues, NoResponder</span></div>
+    <div class="card"><div class="label">3. Contexto semanal</div><strong>contexto.json</strong><br><span style="color:var(--muted)">Max 5 items en plato. Si no esta aqui, no es Ahora</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Instalacion operador no-autor — README.md</h2>
+  <div class="mono">git clone https://github.com/TU_USUARIO/inboxtriage && cd inboxtriage<br>npm install<br>cp .env.example .env # pon GOOGLE_CLIENT_ID<br>cp contexto.example.json contexto.json<br>npm run qvac:smoke # Scope 1 verde<br>npm run gmail:auth && npm run gmail:labels<br>npm run triage:15 # Scope 5 verde >=10 mails<br>npm run demo:3min # Scope 6 ensayo</div>
+  <p style="margin-top:12px;color:var(--muted)">Recorte permitido CICLO.md: si no hay token a las 5h, usa <code>npm run gmail:fixtures</code> y sigue con fixtures. Juez ve terminal + Gmail.</p>
+</div>
+
+<div class="section">
+  <h2>Privacidad y no-gos</h2>
+  <div class="steps">
+    <div class="card"><span class="check">✔</span> Cuerpo del mail nunca a OpenAI/Anthropic/Google Generative Language. Verificable con <code>npm run demo:check-cloud</code></div>
+    <div class="card"><span class="check">✔</span> Tokens OAuth solo en disco local, nunca en git. .gitignore + .env.example</div>
+    <div class="card"><span class="check">✔</span> Out of Scope: no redacta respuestas, no mira calendario, no RAG, no 4ta categoria</div>
+  </div>
+</div>
+
+<footer>
+  <div>InboxTriage · Shape Up Pitch + Ciclo · PITCH.md es fuente de verdad · 16h fijas</div>
+  <div><a href="https://github.com/TU_USUARIO/inboxtriage" style="color:var(--fg)">GitHub Repo</a> · <a href="./PITCH.md" style="color:var(--fg)">PITCH.md</a> · <a href="./CICLO.md" style="color:var(--fg)">CICLO.md</a></div>
+</footer>
+</div>
+
+<script>
+// Configura aqui tu repo real - ISPConfig solo sirve estaticos, asi que edita a mano
+const REPO_URL = "https://github.com/TU_USUARIO/inboxtriage";
+document.getElementById('repo-link').href = REPO_URL;
+// Auto-reemplaza links footer si estas en GitHub Pages
+if (location.hostname.includes('github.io')) {
+  // deja como esta
+}
+</script>
+</body>
+</html>
