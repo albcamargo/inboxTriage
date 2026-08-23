@@ -23,3 +23,4 @@ models/
 *.gguf
 fixtures.json
 fixtures-50-demo.json
+qvac.config.local.mjs

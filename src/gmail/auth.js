@@ -20,9 +20,13 @@ const authUrl = oAuth2Client.generateAuthUrl({ access_type: 'offline', scope: SC
 console.log('[Gmail] Abriendo browser para OAuth...');
 console.log(`[Gmail] URL: ${authUrl}`);
 
+// El puerto sale del REDIRECT_URI (para clientes Desktop, Google acepta
+// cualquier puerto de localhost) — evita chocar con otros servicios locales.
+const PORT = Number(new URL(REDIRECT_URI).port) || 80;
+
 const server = http.createServer(async (req, res) => {
   if (req.url.startsWith('/oauth2callback')) {
-    const url = new URL(req.url, 'http://localhost:3000');
+    const url = new URL(req.url, `http://localhost:${PORT}`);
     const code = url.searchParams.get('code');
     if (!code) { res.end('No code'); return; }
     const { tokens } = await oAuth2Client.getToken(code);
@@ -33,7 +37,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(3000, () => {
-  console.log('[Gmail] Esperando callback en http://localhost:3000/oauth2callback');
+server.listen(PORT, () => {
+  console.log(`[Gmail] Esperando callback en ${REDIRECT_URI}`);
   open(authUrl);
 });
