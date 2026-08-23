@@ -40,7 +40,7 @@ const entry = {
   answers,
   label_final: label,
   timestamp: new Date().toISOString(),
-  modelo: process.env.QVAC_MODEL || 'llama-3.2-1b-instruct-q4',
+  modelo: qvac.engineName, // el motor que decidio de verdad (qvac:<modelo> | mock)
 };
 fs.appendFileSync(logPath, JSON.stringify(entry) + '\n');
 console.log(`[Triage ONE] ${messageId} -> ${label}`);

@@ -67,16 +67,6 @@ function normalizeAnswer(raw) {
   return 'INCIERTO';
 }
 
-function heuristicAnswers(text) {
-  const lower = (text || '').toLowerCase();
-  return {
-    es_stakeholder: /catering|produccion@venue|ana\.perez|ana perez|direccion@|jcamargo/.test(lower) ? 'SI' : 'NO',
-    bloquea_evento: /jueves|cierre lista|auditorio|acreditacion|informe trimestral/.test(lower) ? 'SI' : 'NO',
-    pide_accion: /necesitamos|urgente|confirmar|cierre|deadline/.test(lower) ? 'SI' : 'NO',
-    es_fyi: /\bfyi\b|comunicado|bienestar|newsletter|gracias,? recibido|no requiere accion/.test(lower) ? 'SI' : 'NO',
-  };
-}
-
 // Solo es "inconcluso" si NADA se pudo parsear. Todo-NO es un veredicto
 // legitimo del modelo (p. ej. un newsletter) y no debe reemplazarse.
 function isInconclusive(answers) {
@@ -103,6 +93,8 @@ class QvacTriageClient {
   constructor(modelId) {
     this.modelId = modelId;
     this.isMock = !modelId;
+    // Para el log JSONL: con que se decidio realmente cada correo.
+    this.engineName = modelId ? `qvac:${MODEL_NAME}` : 'mock';
   }
 
   async completion(prompt) {
@@ -164,9 +156,9 @@ class QvacTriageClient {
     }
 
     if (isInconclusive(results)) {
-      const fallback = heuristicAnswers(text);
-      console.warn('[QVAC] Respuesta inconclusa - usando heuristica de fixtures');
-      return fallback;
+      // Incertidumbre honesta: no se inventa un veredicto. policy() manda
+      // INCIERTO a Despues — el correo queda a la vista, nunca escondido.
+      console.warn('[QVAC] Respuesta inconclusa -> INCIERTO (policy la etiqueta Despues)');
     }
     return results;
   }
@@ -195,7 +187,20 @@ export async function getQvacClient() {
     });
     console.log('[QVAC] Modelo OK - Scope 1 VERDE');
   } catch (e) {
-    console.warn(`[QVAC] Fallo carga SDK (${e.message}) - mock deterministico para no bloquear demo`);
+    // QVAC es la capa de inferencia del producto: si el modelo no carga, el
+    // triaje NO corre. El mock de keywords existe solo para tests de pipeline
+    // y hay que pedirlo explicitamente (QVAC_ALLOW_MOCK=1) — nunca es un
+    // fallback silencioso que aparente inferencia local.
+    if (process.env.QVAC_ALLOW_MOCK === '1') {
+      console.warn(`[QVAC] Fallo carga SDK (${e.message})`);
+      console.warn('[QVAC] *** MODO MOCK EXPLICITO: keywords, SIN modelo. Solo para tests. ***');
+    } else {
+      throw new Error(
+        `QVAC no pudo cargar el modelo (${e.message}). ` +
+        'Revisa requisitos (Node >=22.17, RAM) o corre "npm run qvac:smoke". ' +
+        'Para tests de pipeline sin modelo: QVAC_ALLOW_MOCK=1.'
+      );
+    }
   }
 
   singleton = new QvacTriageClient(modelId);
