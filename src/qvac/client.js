@@ -4,7 +4,17 @@
  */
 
 import 'dotenv/config';
-import { completion, LLAMA_3_2_1B_INST_Q4_0, loadModel, unloadModel } from '@qvac/sdk';
+import { completion, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M, QWEN3_8B_INST_Q4_K_M, loadModel, unloadModel } from '@qvac/sdk';
+
+// Modelo elegible con QVAC_MODEL en .env:
+//   *1b* -> Llama 3.2 1B (~0.8 GB, rapido, menos preciso)
+//   *8b* -> Qwen3 8B (~4.7 GB, el mas preciso; pide equipo con GPU o CPU fuerte)
+//   otro -> Qwen3 4B (~2.4 GB, recomendado; corre en CPU con 32 GB)
+const MODELO_ENV = (process.env.QVAC_MODEL || '').toLowerCase();
+const USE_1B = MODELO_ENV.includes('1b');
+const USE_8B = MODELO_ENV.includes('8b');
+const MODEL_SRC = USE_1B ? LLAMA_3_2_1B_INST_Q4_0 : USE_8B ? QWEN3_8B_INST_Q4_K_M : QWEN3_4B_INST_Q4_K_M;
+const MODEL_NAME = USE_1B ? 'Llama 3.2 1B Q4' : USE_8B ? 'Qwen3 8B Q4' : 'Qwen3 4B Q4';
 
 let singleton = null;
 
@@ -12,25 +22,27 @@ const SINGLE_COMPLETION =
   process.env.QVAC_SINGLE_COMPLETION !== 'false' && process.env.QVAC_SINGLE_COMPLETION !== '0';
 const MAX_TOKENS = parseInt(process.env.QVAC_MAX_TOKENS || '128', 10);
 
+// Forma calibrada para modelos chicos: el correo primero, UNA pregunta corta al
+// final, respuesta binaria. Sin ofrecer INCIERTO (invita al modelo a esconderse;
+// el parser igual mapea salidas raras a INCIERTO).
 const PROMPTS = {
-  es_stakeholder: (ctx) => `Eres un clasificador estricto. Contexto stakeholders esta semana: ${ctx.stakeholders?.join(', ') || 'ninguno'}.
-Pregunta: ¿El remitente o contenido menciona a uno de estos stakeholders?
-Correo: "{text}"
-Responde SOLO con una palabra: SI, NO, INCIERTO`,
+  es_stakeholder: (ctx) => `CORREO: "{text}"
 
-  bloquea_evento: (ctx) => `Eres un clasificador estricto. Cosas en el plato esta semana: ${ctx.on_the_plate?.join(' | ') || 'nada'}.
-Pregunta: ¿Este correo bloquea o es critico para algo que esta en el plato esta semana (evento jueves, cierre catering, auditorio)?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+Personas clave de esta semana: ${ctx.stakeholders?.join(', ') || '(ninguna)'}.
+¿El remitente del correo es una de estas personas clave? Responde SI o NO:`,
 
-  pide_accion: () => `Pregunta: ¿Este correo pide explicitamente un dato, accion, confirmacion o entrega?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+  bloquea_evento: (ctx) => `CORREO: "{text}"
 
-  es_fyi: (ctx) => `Contexto deprioritize: ${ctx.deprioritize?.join(', ') || 'comunicados rutina, newsletters, FYI masivo'}.
-Pregunta: ¿Este correo es FYI, comunicado rutina, newsletter, agradecimiento o CC masivo sin pedido explicito?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+Pendientes de esta semana: ${ctx.on_the_plate?.join(' | ') || '(ninguno)'}.
+¿Este correo trata directamente de uno de estos pendientes? Responde SI o NO:`,
+
+  pide_accion: () => `CORREO: "{text}"
+
+¿El remitente pide al destinatario un dato, una confirmacion o una accion? Responde SI o NO:`,
+
+  es_fyi: () => `CORREO: "{text}"
+
+¿Este correo es solo informativo (comunicado, newsletter, FYI, agradecimiento) y no pide nada al destinatario? Responde SI o NO:`,
 };
 
 const SINGLE_PROMPT = (ctx) => `Eres un clasificador de triaje de Gmail. Contexto semana:
@@ -55,18 +67,10 @@ function normalizeAnswer(raw) {
   return 'INCIERTO';
 }
 
-function heuristicAnswers(text) {
-  const lower = (text || '').toLowerCase();
-  return {
-    es_stakeholder: /catering|produccion@venue|ana\.perez|ana perez|direccion@|jcamargo/.test(lower) ? 'SI' : 'NO',
-    bloquea_evento: /jueves|cierre lista|auditorio|acreditacion|informe trimestral/.test(lower) ? 'SI' : 'NO',
-    pide_accion: /necesitamos|urgente|confirmar|cierre|deadline/.test(lower) ? 'SI' : 'NO',
-    es_fyi: /\bfyi\b|comunicado|bienestar|newsletter|gracias,? recibido|no requiere accion/.test(lower) ? 'SI' : 'NO',
-  };
-}
-
+// Solo es "inconcluso" si NADA se pudo parsear. Todo-NO es un veredicto
+// legitimo del modelo (p. ej. un newsletter) y no debe reemplazarse.
 function isInconclusive(answers) {
-  return Object.values(answers).every((v) => v === 'NO' || v === 'INCIERTO');
+  return Object.values(answers).every((v) => v === 'INCIERTO');
 }
 
 function parseJsonAnswers(raw) {
@@ -89,6 +93,8 @@ class QvacTriageClient {
   constructor(modelId) {
     this.modelId = modelId;
     this.isMock = !modelId;
+    // Para el log JSONL: con que se decidio realmente cada correo.
+    this.engineName = modelId ? `qvac:${MODEL_NAME}` : 'mock';
   }
 
   async completion(prompt) {
@@ -111,13 +117,14 @@ class QvacTriageClient {
       return 'NO';
     }
 
-    const result = completion({
+    const run = completion({
       modelId: this.modelId,
       history: [{ role: 'user', content: cleanPrompt }],
       stream: false,
     });
-    const text = await result.text;
-    return (text || '').slice(0, MAX_TOKENS * 8);
+    // API moderna del SDK 0.17: result.text esta deprecado; el reemplazo es final.contentText
+    const final = await run.final;
+    return (final.contentText || '').slice(0, MAX_TOKENS * 8);
   }
 
   async askFourQuestions(emailText, contexto) {
@@ -149,9 +156,9 @@ class QvacTriageClient {
     }
 
     if (isInconclusive(results)) {
-      const fallback = heuristicAnswers(text);
-      console.warn('[QVAC] Respuesta inconclusa - usando heuristica de fixtures');
-      return fallback;
+      // Incertidumbre honesta: no se inventa un veredicto. policy() manda
+      // INCIERTO a Despues — el correo queda a la vista, nunca escondido.
+      console.warn('[QVAC] Respuesta inconclusa -> INCIERTO (policy la etiqueta Despues)');
     }
     return results;
   }
@@ -163,9 +170,14 @@ export async function getQvacClient() {
   let modelId = null;
   try {
     process.env.QVAC_CONFIG_PATH ||= './qvac.config.js';
-    console.log('[QVAC] Cargando Llama 3.2 1B Instruct Q4 (un proceso, un modelo - RNF-03)');
+    console.log(`[QVAC] Cargando ${MODEL_NAME} (un proceso, un modelo - RNF-03)`);
     modelId = await loadModel({
-      modelSrc: LLAMA_3_2_1B_INST_Q4_0,
+      modelSrc: MODEL_SRC,
+      modelType: 'llm',
+      // Greedy y determinista: con el sampling por defecto las respuestas SI/NO
+      // cambian entre corridas identicas. reasoning_budget 0: los modelos con
+      // "thinking" (Qwen3) deben responder directo. predict corto: solo JSON/una palabra.
+      modelConfig: { ctx_size: 2048, temp: 0, top_k: 1, seed: 42, predict: 96, reasoning_budget: 0 },
       onProgress: (p) => {
         if (!p?.percentage) return;
         const line = `▸ ${p.percentage.toFixed(0)}%`;
@@ -175,7 +187,20 @@ export async function getQvacClient() {
     });
     console.log('[QVAC] Modelo OK - Scope 1 VERDE');
   } catch (e) {
-    console.warn(`[QVAC] Fallo carga SDK (${e.message}) - mock deterministico para no bloquear demo`);
+    // QVAC es la capa de inferencia del producto: si el modelo no carga, el
+    // triaje NO corre. El mock de keywords existe solo para tests de pipeline
+    // y hay que pedirlo explicitamente (QVAC_ALLOW_MOCK=1) — nunca es un
+    // fallback silencioso que aparente inferencia local.
+    if (process.env.QVAC_ALLOW_MOCK === '1') {
+      console.warn(`[QVAC] Fallo carga SDK (${e.message})`);
+      console.warn('[QVAC] *** MODO MOCK EXPLICITO: keywords, SIN modelo. Solo para tests. ***');
+    } else {
+      throw new Error(
+        `QVAC no pudo cargar el modelo (${e.message}). ` +
+        'Revisa requisitos (Node >=22.17, RAM) o corre "npm run qvac:smoke". ' +
+        'Para tests de pipeline sin modelo: QVAC_ALLOW_MOCK=1.'
+      );
+    }
   }
 
   singleton = new QvacTriageClient(modelId);

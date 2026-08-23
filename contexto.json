@@ -1,24 +1,24 @@
 {
   "meta": {
-    "week_of": "2026-08-18",
-    "owner_role": "oficinista institucional - coordinacion eventos",
+    "week_of": "2026-08-23",
+    "owner_role": "participante del Aleph Hackathon - equipo InboxTriage",
     "language": "es/en"
   },
   "on_the_plate": [
-    "Evento institucional del jueves 28 agosto: logistica auditorio principal, catering y acreditaciones",
-    "Cierre de lista de invitados antes del martes 18:00 para pedido catering",
-    "Entrega informe trimestral a direccion - deadline viernes"
+    "PRIORIDAD MAXIMA: cualquier correo relacionado con el hackathon (Aleph, submission, InboxTriage, QVAC, jueces) se responde YA",
+    "Aleph Hackathon: entrega (submission) del proyecto InboxTriage hoy",
+    "Demo y pitch de InboxTriage con QVAC ante los jueces",
+    "Coordinacion con el equipo para el merge final del codigo"
   ],
   "stakeholders": [
-    "jcamargo <jcamargo@corefex.net>",
-    "catering@proveedor-evento.com",
-    "produccion@venue.com",
-    "direccion@institucion.edu.co"
+    "acamargo@corefex.net",
+    "jcamargo@corefex.net",
+    "organizadores del Aleph Hackathon",
+    "Tether / QVAC"
   ],
   "deprioritize": [
-    "comunicados institucionales de rutina sin pedido explicito",
-    "newsletters, descuentos de software, webinars",
-    "FYI y CCs masivos que no piden dato ni accion",
-    "cadenas de agradecimiento / gracias / recibido"
+    "newsletters y promociones (juegos, conciertos, descuentos de software)",
+    "resumenes automaticos y avisos de plataformas",
+    "FYI masivos que no piden nada"
   ]
 }

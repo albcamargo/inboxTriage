@@ -20,6 +20,7 @@
     "triage:20": "node src/triage/batch.js --limit 20",
     "demo:3min": "bash demo-3min.sh",
     "demo:check-cloud": "grep -R \"api.openai.com\\|api.anthropic.com\\|generativelanguage.googleapis.com\" src/ || echo \"OK 0 llamadas cloud LLM\"",
+    "dashboard:api": "node src/server/api.js",
     "gmail:seed": "node src/gmail/seed.js",
     "gmail:seed:50": "node src/gmail/seed.js --count 50 --to acamargo@corefex.net",
     "gmail:seed:dry": "node src/gmail/seed.js --dry-run --count 50 --to acamargo@corefex.net",
