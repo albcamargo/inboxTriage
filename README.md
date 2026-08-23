@@ -9,7 +9,7 @@
 ## 0. Requisitos — Runtime demo PITCH.md
 
 - Ubuntu 24.04 LTS, 32 GB RAM, sin GPU necesaria, CPU-first
-- Node.js 20+ (`node -v`)
+- Node.js 22.17+ (`node -v`) — requerido por `@qvac/sdk`
 - Cuenta Gmail demo: **acamargo@corefex.net** con OAuth habilitado
 - Puerto 3000 libre para callback OAuth
 - Docker + docker compose (opcional, para volumen models)
@@ -17,8 +17,8 @@
 ## 1. Setup repo — 2 min
 
 ```bash
-git clone <repo-url> inbox-triage
-cd inbox-triage
+git clone https://github.com/albcamargo/inboxtriage.git
+cd inboxtriage
 npm install
 cp .env.example .env
 cp contexto.example.json contexto.json
@@ -167,7 +167,7 @@ docker compose --profile landing up -d landing # http://localhost:8080
 sudo cp landing/apache.conf /etc/apache2/sites-available/inboxtriage.conf
 sudo a2ensite inboxtriage && systemctl reload apache2
 ```
-Edita `landing/index.html` linea `REPO_URL = https://github.com/TU_USUARIO/inboxtriage`
+Landing: `landing/index.html` apunta a `https://github.com/albcamargo/inboxtriage`
 
 **Docker Ubuntu 24.04 + volumen models:**
 ```bash

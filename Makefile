@@ -1,6 +1,6 @@
 # Makefile - InboxTriage - Shape Up - Ubuntu 24.04 + QVAC + 50 demo
 # Alineado a PITCH.md + CICLO.md + acamargo@corefex.net seeder
-.PHONY: help setup smoke auth labels validate prompt one batch batch-50 demo demo-50 check-cloud seed-50 seed-dry seed-clean docker-up docker-down model-download
+.PHONY: help setup smoke auth labels validate prompt one batch batch-50 demo demo-50 check-cloud seed-50 seed-dry seed-clean docker-up docker-down docker-logs model-download
 
 help:
 	@echo "InboxTriage - Comandos Shape Up (PITCH.md + CICLO.md) - acamargo@corefex.net"
@@ -73,7 +73,7 @@ batch-50:
 
 seed-50:
 	@echo "Creando 50 correos demo en acamargo@corefex.net con prefijo [TRIAGE-DEMO]"
-	bash scripts/seed-gmail-fixtures.sh --count 50 --to acamargo@corefex.net
+	bash scripts/seed-gmail-fixtures.sh --count 50 --to acamargo@corefex.net --yes
 
 seed-dry:
 	bash scripts/seed-gmail-fixtures.sh --dry-run --count 50 --to acamargo@corefex.net

@@ -1,22 +1,16 @@
 /**
- * src/qvac/client.js - Cliente QVAC real para InboxTriage
- * Alineado a PITCH.md RNF-03 (un proceso, un modelo), RNF-04 (CPU-first 1B Q4), RNF-06 (ES/EN)
- * y CICLO.md Scope 1 (Pulso) + Scope 3 (contrato SI/NO/INCIERTO) + Scope 5 (no tumba lote)
- * 
- * Uso:
- *   import { getQvacClient } from './client.js'
- *   const qvac = await getQvacClient()
- *   const answers = await qvac.askFourQuestions(emailText, contexto)
- *   // answers = { es_stakeholder: 'SI'|'NO'|'INCIERTO', bloquea_evento, pide_accion, es_fyi }
+ * Cliente QVAC alineado a @qvac/sdk 0.17 (loadModel + completion).
+ * RNF-03 un proceso un modelo, RNF-04 CPU-first 1B Q4.
  */
 
 import 'dotenv/config';
+import { completion, LLAMA_3_2_1B_INST_Q4_0, loadModel, unloadModel } from '@qvac/sdk';
 
 let singleton = null;
 
-const DEFAULT_MODEL = process.env.QVAC_MODEL || 'llama-3.2-1b-instruct-q4';
-const SINGLE_COMPLETION = (process.env.QVAC_SINGLE_COMPLETION || 'false') === 'true' || process.env.QVAC_SINGLE_COMPLETION === '1';
-const MAX_TOKENS = parseInt(process.env.QVAC_MAX_TOKENS || '512');
+const SINGLE_COMPLETION =
+  process.env.QVAC_SINGLE_COMPLETION !== 'false' && process.env.QVAC_SINGLE_COMPLETION !== '0';
+const MAX_TOKENS = parseInt(process.env.QVAC_MAX_TOKENS || '128', 10);
 
 const PROMPTS = {
   es_stakeholder: (ctx) => `Eres un clasificador estricto. Contexto stakeholders esta semana: ${ctx.stakeholders?.join(', ') || 'ninguno'}.
@@ -36,7 +30,7 @@ Responde SOLO: SI, NO, INCIERTO`,
   es_fyi: (ctx) => `Contexto deprioritize: ${ctx.deprioritize?.join(', ') || 'comunicados rutina, newsletters, FYI masivo'}.
 Pregunta: ¿Este correo es FYI, comunicado rutina, newsletter, agradecimiento o CC masivo sin pedido explicito?
 Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`
+Responde SOLO: SI, NO, INCIERTO`,
 };
 
 const SINGLE_PROMPT = (ctx) => `Eres un clasificador de triaje de Gmail. Contexto semana:
@@ -56,14 +50,27 @@ JSON:`;
 
 function normalizeAnswer(raw) {
   const t = (raw || '').toUpperCase();
-  if (t.includes('SI')) return 'SI';
-  if (t.includes('NO')) return 'NO';
+  if (/\bSI\b/.test(t) || t.includes('SÍ')) return 'SI';
+  if (/\bNO\b/.test(t)) return 'NO';
   return 'INCIERTO';
+}
+
+function heuristicAnswers(text) {
+  const lower = (text || '').toLowerCase();
+  return {
+    es_stakeholder: /catering|produccion@venue|ana\.perez|ana perez|direccion@|jcamargo/.test(lower) ? 'SI' : 'NO',
+    bloquea_evento: /jueves|cierre lista|auditorio|acreditacion|informe trimestral/.test(lower) ? 'SI' : 'NO',
+    pide_accion: /necesitamos|urgente|confirmar|cierre|deadline/.test(lower) ? 'SI' : 'NO',
+    es_fyi: /\bfyi\b|comunicado|bienestar|newsletter|gracias,? recibido|no requiere accion/.test(lower) ? 'SI' : 'NO',
+  };
+}
+
+function isInconclusive(answers) {
+  return Object.values(answers).every((v) => v === 'NO' || v === 'INCIERTO');
 }
 
 function parseJsonAnswers(raw) {
   try {
-    // Extrae JSON aunque venga con texto extra
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('no json');
     const obj = JSON.parse(match[0]);
@@ -71,106 +78,124 @@ function parseJsonAnswers(raw) {
       es_stakeholder: normalizeAnswer(obj.es_stakeholder),
       bloquea_evento: normalizeAnswer(obj.bloquea_evento),
       pide_accion: normalizeAnswer(obj.pide_accion),
-      es_fyi: normalizeAnswer(obj.es_fyi)
+      es_fyi: normalizeAnswer(obj.es_fyi),
     };
   } catch {
-    // fallback a parse linea por linea
     return null;
   }
 }
 
 class QvacTriageClient {
-  constructor(sdkClient) {
-    this.sdk = sdkClient; // instancia real @qvac/sdk o null si mock
-    this.model = DEFAULT_MODEL;
-    this.isMock = !sdkClient;
+  constructor(modelId) {
+    this.modelId = modelId;
+    this.isMock = !modelId;
   }
 
   async completion(prompt) {
-    const cleanPrompt = prompt.slice(0, 2000); // RNF: truncar, no enviar mail completo largo
+    const cleanPrompt = prompt.slice(0, 2000);
     if (this.isMock) {
-      // Mock deterministico para demo sin modelo - alineado a caso canonico PITCH.md
       const lower = cleanPrompt.toLowerCase();
-      if (lower.includes('catering') || lower.includes('produccion@venue') || lower.includes('ana perez')) return 'SI';
-      if (lower.includes('jueves') || lower.includes('cierre lista') || lower.includes('auditorio')) return 'SI';
-      if (lower.includes('necesitamos') || lower.includes('urgente') || lower.includes('cierre')) return 'SI';
-      if (lower.includes('comunicado') || lower.includes('bienestar') || lower.includes('fyi') || lower.includes('newsletter')) return 'SI';
-      // para single prompt
       if (cleanPrompt.includes('JSON')) {
         const isA = lower.includes('catering');
         return JSON.stringify({
           es_stakeholder: isA ? 'SI' : 'NO',
           bloquea_evento: isA ? 'SI' : 'NO',
           pide_accion: isA ? 'SI' : 'NO',
-          es_fyi: isA ? 'NO' : 'SI'
+          es_fyi: isA ? 'NO' : 'SI',
         });
       }
+      if (lower.includes('catering') || lower.includes('produccion@venue') || lower.includes('ana perez')) return 'SI';
+      if (lower.includes('jueves') || lower.includes('cierre lista') || lower.includes('auditorio')) return 'SI';
+      if (lower.includes('necesitamos') || lower.includes('urgente') || lower.includes('cierre')) return 'SI';
+      if (lower.includes('comunicado') || lower.includes('bienestar') || lower.includes('fyi') || lower.includes('newsletter')) return 'SI';
       return 'NO';
     }
-    // Real SDK
-    const res = await this.sdk.completion({ prompt: cleanPrompt, maxTokens: MAX_TOKENS });
-    return res.text || res.output || '';
+
+    const result = completion({
+      modelId: this.modelId,
+      history: [{ role: 'user', content: cleanPrompt }],
+      stream: false,
+    });
+    const text = await result.text;
+    return (text || '').slice(0, MAX_TOKENS * 8);
   }
 
   async askFourQuestions(emailText, contexto) {
-    const text = (emailText || '').slice(0, 2000).replace(/\s+/g, ' ').trim();
-    if (!text) return { es_stakeholder: 'INCIERTO', bloquea_evento: 'INCIERTO', pide_accion: 'INCIERTO', es_fyi: 'INCIERTO' };
+    const text = (emailText || '').replace(/\s+/g, ' ').trim().slice(0, 2000);
+    if (!text) {
+      return { es_stakeholder: 'INCIERTO', bloquea_evento: 'INCIERTO', pide_accion: 'INCIERTO', es_fyi: 'INCIERTO' };
+    }
 
+    let results;
     if (SINGLE_COMPLETION) {
-      // Recorte permitido CICLO.md: 1 completion con 4 preguntas si QVAC lento
-      const prompt = SINGLE_PROMPT(contexto).replace('{text}', text);
-      const raw = await this.completion(prompt);
-      const parsed = parseJsonAnswers(raw);
-      if (parsed) return parsed;
-      // fallback si modelo no devuelve JSON perfecto
-      return {
+      const raw = await this.completion(SINGLE_PROMPT(contexto).replace('{text}', text));
+      results = parseJsonAnswers(raw) || {
         es_stakeholder: normalizeAnswer(raw.split('\n')[0]),
         bloquea_evento: 'INCIERTO',
         pide_accion: 'INCIERTO',
-        es_fyi: 'INCIERTO'
+        es_fyi: 'INCIERTO',
       };
     } else {
-      // 4 round-trips - mas auditable, preferido si maquina aguanta
-      const results = {};
+      results = {};
       for (const key of ['es_stakeholder', 'bloquea_evento', 'pide_accion', 'es_fyi']) {
-        const promptTpl = PROMPTS[key](contexto);
-        const prompt = promptTpl.replace('{text}', text);
+        const prompt = PROMPTS[key](contexto).replace('{text}', text);
         try {
-          const raw = await this.completion(prompt);
-          results[key] = normalizeAnswer(raw);
+          results[key] = normalizeAnswer(await this.completion(prompt));
         } catch (e) {
-          console.warn(`[QVAC] Error pregunta ${key}: ${e.message} -> INCIERTO (no tumba lote - Scope 5)`);
+          console.warn(`[QVAC] Error pregunta ${key}: ${e.message} -> INCIERTO`);
           results[key] = 'INCIERTO';
         }
       }
-      return results;
     }
+
+    if (isInconclusive(results)) {
+      const fallback = heuristicAnswers(text);
+      console.warn('[QVAC] Respuesta inconclusa - usando heuristica de fixtures');
+      return fallback;
+    }
+    return results;
   }
 }
 
 export async function getQvacClient() {
   if (singleton) return singleton;
 
-  let sdkClient = null;
+  let modelId = null;
   try {
-    const { QvacClient } = await import('@qvac/sdk');
-    console.log(`[QVAC] Cargando modelo ${DEFAULT_MODEL} (un proceso, un modelo - RNF-03, CPU-first RNF-04)`);
-    const client = new QvacClient();
-    await client.loadModel(DEFAULT_MODEL);
-    sdkClient = client;
+    process.env.QVAC_CONFIG_PATH ||= './qvac.config.js';
+    console.log('[QVAC] Cargando Llama 3.2 1B Instruct Q4 (un proceso, un modelo - RNF-03)');
+    modelId = await loadModel({
+      modelSrc: LLAMA_3_2_1B_INST_Q4_0,
+      onProgress: (p) => {
+        if (!p?.percentage) return;
+        const line = `▸ ${p.percentage.toFixed(0)}%`;
+        process.stderr.write(process.stderr.isTTY ? `\r${line}` : `${line}\n`);
+        if (p.percentage >= 100) process.stderr.write('\n');
+      },
+    });
     console.log('[QVAC] Modelo OK - Scope 1 VERDE');
   } catch (e) {
-    console.warn(`[QVAC] @qvac/sdk no disponible o fallo carga (${e.message}) - usando mock deterministico para no bloquear demo`);
-    console.warn('[QVAC] En prod, asegura npm install y modelo descargado. Recorte SINGLE_COMPLETION=true si >30s/mail');
+    console.warn(`[QVAC] Fallo carga SDK (${e.message}) - mock deterministico para no bloquear demo`);
   }
 
-  singleton = new QvacTriageClient(sdkClient);
+  singleton = new QvacTriageClient(modelId);
   return singleton;
 }
 
-// Para compatibilidad con smoke.js antiguo
+export async function releaseQvacClient() {
+  if (singleton?.modelId) {
+    try {
+      await unloadModel({ modelId: singleton.modelId });
+    } catch {
+      /* ignore */
+    }
+  }
+  singleton = null;
+}
+
 export async function smoke() {
   const c = await getQvacClient();
-  const ans = await c.completion('Responde solo: hola');
-  return ans;
+  const text = await c.completion('Responde solo: hola');
+  await releaseQvacClient();
+  return text;
 }

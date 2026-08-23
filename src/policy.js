@@ -9,9 +9,7 @@ export function policy(answers) {
   if (norm(answers.es_stakeholder)==='SI' && norm(answers.bloquea_evento)==='SI') return 'InboxTriage/Ahora';
   if (norm(answers.es_stakeholder)==='SI' && norm(answers.pide_accion)==='SI') return 'InboxTriage/Ahora';
   if (norm(answers.pide_accion)==='SI' && norm(answers.bloquea_evento)==='SI') return 'InboxTriage/Ahora';
-  
-  // Fallback Shape Up: INCIERTO -> Despues (no tumba lote)
-  if (norm(answers.es_fyi)==='NO' && norm(answers.pide_accion)==='NO') return 'InboxTriage/NoResponder';
-  
+
+  // INCIERTO o senales debiles -> Despues. No tratar "todo NO" como FYI.
   return 'InboxTriage/Despues';
 }

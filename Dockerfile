@@ -1,16 +1,16 @@
-# Dockerfile - Ubuntu 24.04 LTS + Node 20 + QVAC - Alineado a PITCH.md Runtime demo
+# Dockerfile - Ubuntu 24.04 LTS + Node 22 + QVAC
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV NODE_VERSION=20.18.0
 ENV QVAC_MODEL=llama-3.2-1b-instruct-q4
 ENV QVAC_MODELS_PATH=/app/models
+ENV QVAC_CONFIG_PATH=/app/qvac.config.js
 ENV CONTEXTO_PATH=/app/contexto.json
 ENV LOG_PATH=/app/triage.log
 
 RUN apt-get update && apt-get install -y \
     curl ca-certificates gnupg build-essential python3 git \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && node -v && npm -v \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
