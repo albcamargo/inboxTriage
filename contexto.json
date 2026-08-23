@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "week_of": "2026-08-18",
+    "owner_role": "oficinista institucional - coordinacion eventos",
+    "language": "es/en"
+  },
+  "on_the_plate": [
+    "Evento institucional del jueves 28 agosto: logistica auditorio principal, catering y acreditaciones",
+    "Cierre de lista de invitados antes del martes 18:00 para pedido catering",
+    "Entrega informe trimestral a direccion - deadline viernes"
+  ],
+  "stakeholders": [
+    "jcamargo <jcamargo@corefex.net>",
+    "catering@proveedor-evento.com",
+    "produccion@venue.com",
+    "direccion@institucion.edu.co"
+  ],
+  "deprioritize": [
+    "comunicados institucionales de rutina sin pedido explicito",
+    "newsletters, descuentos de software, webinars",
+    "FYI y CCs masivos que no piden dato ni accion",
+    "cadenas de agradecimiento / gracias / recibido"
+  ]
+}

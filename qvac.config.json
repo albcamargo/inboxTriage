@@ -1,0 +1,12 @@
+{
+  "loggerLevel": "info",
+  "loggerConsoleOutput": true,
+  "cacheDirectory": "./models",
+  "deviceDefaults": [
+    {
+      "name": "CPU-only demo",
+      "match": { "platform": "linux" },
+      "defaults": { "llm": { "device": "cpu" } }
+    }
+  ]
+}
