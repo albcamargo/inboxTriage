@@ -13,6 +13,21 @@ const limitIdx = args.indexOf('--limit');
 const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1], 10) : batchSize;
 const useInbox = args.includes('--inbox');
 const forceFixtures = args.includes('--fixtures');
+// --nuevos: salta correos que ya estan en triage.log (clasificacion incremental;
+// asi el polling y los re-arranques no re-procesan toda la bandeja).
+const soloNuevos = args.includes('--nuevos');
+
+function idsYaClasificados() {
+  try {
+    return new Set(
+      fs.readFileSync(logPath, 'utf8').split('\n').filter(Boolean)
+        .map((l) => { try { return JSON.parse(l).messageId; } catch { return null; } })
+        .filter(Boolean),
+    );
+  } catch {
+    return new Set();
+  }
+}
 
 console.log(`[Triage BATCH] Scope 5 - Lote ${limit} - Iniciando...`);
 
@@ -40,8 +55,13 @@ async function loadMessages() {
       maxResults: limit,
       q: query,
     });
-    const ids = data.messages || [];
+    let ids = data.messages || [];
     if (!ids.length) throw new Error(useInbox ? 'inbox vacio' : 'sin correos [TRIAGE-DEMO]');
+    if (soloNuevos) {
+      const vistos = idsYaClasificados();
+      ids = ids.filter((m) => !vistos.has(m.id));
+      if (!ids.length) return { messages: [], gmail };
+    }
     const messages = [];
     for (const m of ids) {
       const msg = await gmail.users.messages.get({
@@ -77,6 +97,10 @@ async function loadMessages() {
 }
 
 const { messages, gmail } = await loadMessages();
+if (!messages.length) {
+  console.log('[Triage BATCH] Sin correos nuevos — nada que clasificar.');
+  process.exit(0);
+}
 const qvac = await getQvacClient();
 const labelIds = gmail ? await getTriageLabelIds(gmail) : {};
 

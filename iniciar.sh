@@ -11,7 +11,7 @@ if [ ! -f tokens.json ]; then
 fi
 
 echo "Clasificando tus correos no leidos con el modelo local..."
-node src/triage/batch.js --inbox --limit 15
+node src/triage/batch.js --inbox --limit 15 --nuevos
 
 echo "Abriendo el panel en http://localhost:8642 ..."
 (xdg-open "http://localhost:8642" >/dev/null 2>&1 || open "http://localhost:8642" >/dev/null 2>&1 || true) &

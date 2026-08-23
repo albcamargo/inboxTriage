@@ -10,7 +10,7 @@ if (-not (Test-Path tokens.json)) {
 }
 
 Write-Host "Clasificando tus correos no leidos con el modelo local..."
-node src/triage/batch.js --inbox --limit 15
+node src/triage/batch.js --inbox --limit 15 --nuevos
 
 Write-Host "Abriendo el panel en http://localhost:8642 ..."
 Start-Process "http://localhost:8642"
