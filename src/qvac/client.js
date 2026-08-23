@@ -4,7 +4,14 @@
  */
 
 import 'dotenv/config';
-import { completion, LLAMA_3_2_1B_INST_Q4_0, loadModel, unloadModel } from '@qvac/sdk';
+import { completion, LLAMA_3_2_1B_INST_Q4_0, QWEN3_4B_INST_Q4_K_M, loadModel, unloadModel } from '@qvac/sdk';
+
+// Qwen3 4B Q4 (~2.4 GB) por defecto: el 1B responde NO a casi todo y sus
+// respuestas terminaban descartadas. El 4B corre en CPU con 32 GB de RAM.
+// Para volver al 1B: QVAC_MODEL=llama-3.2-1b-instruct-q4 en .env
+const USE_1B = (process.env.QVAC_MODEL || '').includes('1b');
+const MODEL_SRC = USE_1B ? LLAMA_3_2_1B_INST_Q4_0 : QWEN3_4B_INST_Q4_K_M;
+const MODEL_NAME = USE_1B ? 'Llama 3.2 1B Q4' : 'Qwen3 4B Q4';
 
 let singleton = null;
 
@@ -12,25 +19,27 @@ const SINGLE_COMPLETION =
   process.env.QVAC_SINGLE_COMPLETION !== 'false' && process.env.QVAC_SINGLE_COMPLETION !== '0';
 const MAX_TOKENS = parseInt(process.env.QVAC_MAX_TOKENS || '128', 10);
 
+// Forma calibrada para modelos chicos: el correo primero, UNA pregunta corta al
+// final, respuesta binaria. Sin ofrecer INCIERTO (invita al modelo a esconderse;
+// el parser igual mapea salidas raras a INCIERTO).
 const PROMPTS = {
-  es_stakeholder: (ctx) => `Eres un clasificador estricto. Contexto stakeholders esta semana: ${ctx.stakeholders?.join(', ') || 'ninguno'}.
-Pregunta: ¿El remitente o contenido menciona a uno de estos stakeholders?
-Correo: "{text}"
-Responde SOLO con una palabra: SI, NO, INCIERTO`,
+  es_stakeholder: (ctx) => `CORREO: "{text}"
 
-  bloquea_evento: (ctx) => `Eres un clasificador estricto. Cosas en el plato esta semana: ${ctx.on_the_plate?.join(' | ') || 'nada'}.
-Pregunta: ¿Este correo bloquea o es critico para algo que esta en el plato esta semana (evento jueves, cierre catering, auditorio)?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+Personas clave de esta semana: ${ctx.stakeholders?.join(', ') || '(ninguna)'}.
+¿El remitente del correo es una de estas personas clave? Responde SI o NO:`,
 
-  pide_accion: () => `Pregunta: ¿Este correo pide explicitamente un dato, accion, confirmacion o entrega?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+  bloquea_evento: (ctx) => `CORREO: "{text}"
 
-  es_fyi: (ctx) => `Contexto deprioritize: ${ctx.deprioritize?.join(', ') || 'comunicados rutina, newsletters, FYI masivo'}.
-Pregunta: ¿Este correo es FYI, comunicado rutina, newsletter, agradecimiento o CC masivo sin pedido explicito?
-Correo: "{text}"
-Responde SOLO: SI, NO, INCIERTO`,
+Pendientes de esta semana: ${ctx.on_the_plate?.join(' | ') || '(ninguno)'}.
+¿Este correo trata directamente de uno de estos pendientes? Responde SI o NO:`,
+
+  pide_accion: () => `CORREO: "{text}"
+
+¿El remitente pide al destinatario un dato, una confirmacion o una accion? Responde SI o NO:`,
+
+  es_fyi: () => `CORREO: "{text}"
+
+¿Este correo es solo informativo (comunicado, newsletter, FYI, agradecimiento) y no pide nada al destinatario? Responde SI o NO:`,
 };
 
 const SINGLE_PROMPT = (ctx) => `Eres un clasificador de triaje de Gmail. Contexto semana:
@@ -65,8 +74,10 @@ function heuristicAnswers(text) {
   };
 }
 
+// Solo es "inconcluso" si NADA se pudo parsear. Todo-NO es un veredicto
+// legitimo del modelo (p. ej. un newsletter) y no debe reemplazarse.
 function isInconclusive(answers) {
-  return Object.values(answers).every((v) => v === 'NO' || v === 'INCIERTO');
+  return Object.values(answers).every((v) => v === 'INCIERTO');
 }
 
 function parseJsonAnswers(raw) {
@@ -163,9 +174,14 @@ export async function getQvacClient() {
   let modelId = null;
   try {
     process.env.QVAC_CONFIG_PATH ||= './qvac.config.js';
-    console.log('[QVAC] Cargando Llama 3.2 1B Instruct Q4 (un proceso, un modelo - RNF-03)');
+    console.log(`[QVAC] Cargando ${MODEL_NAME} (un proceso, un modelo - RNF-03)`);
     modelId = await loadModel({
-      modelSrc: LLAMA_3_2_1B_INST_Q4_0,
+      modelSrc: MODEL_SRC,
+      modelType: 'llm',
+      // Greedy y determinista: con el sampling por defecto las respuestas SI/NO
+      // cambian entre corridas identicas. reasoning_budget 0: los modelos con
+      // "thinking" (Qwen3) deben responder directo. predict corto: solo JSON/una palabra.
+      modelConfig: { ctx_size: 2048, temp: 0, top_k: 1, seed: 42, predict: 96, reasoning_budget: 0 },
       onProgress: (p) => {
         if (!p?.percentage) return;
         const line = `▸ ${p.percentage.toFixed(0)}%`;
