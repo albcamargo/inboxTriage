@@ -199,6 +199,28 @@ function responder(res, codigo, cuerpo) {
   res.end(JSON.stringify(cuerpo));
 }
 
+/* --- clasificacion de correos nuevos (boton del panel + polling) --- */
+let clasificando = false;
+function clasificarNuevos(origen) {
+  if (clasificando) return false;
+  clasificando = true;
+  console.log(`[Panel API] Clasificando correos nuevos (${origen})...`);
+  const hijo = spawn(
+    process.execPath,
+    ['src/triage/batch.js', '--inbox', '--limit', '15', '--nuevos'],
+    { cwd: process.cwd(), stdio: 'inherit' },
+  );
+  hijo.on('exit', () => { clasificando = false; });
+  hijo.on('error', () => { clasificando = false; });
+  return true;
+}
+// Polling: cada N minutos clasifica lo nuevo sin que nadie toque nada.
+// DASHBOARD_POLL_MIN=0 lo apaga; por defecto cada 10 minutos.
+const POLL_MIN = parseInt(process.env.DASHBOARD_POLL_MIN ?? '10', 10);
+if (POLL_MIN > 0) {
+  setInterval(() => clasificarNuevos('auto'), POLL_MIN * 60 * 1000);
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
@@ -249,6 +271,13 @@ const server = http.createServer(async (req, res) => {
         }) + '\n',
       );
       return responder(res, 200, { ok: true, label });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/clasificar') {
+      return responder(res, 200, { ocupado: clasificando });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/clasificar') {
+      const iniciado = clasificarNuevos('manual');
+      return responder(res, 200, { ok: true, iniciado, ocupado: clasificando });
     }
     if (req.method === 'POST' && url.pathname === '/api/salir') {
       /* Cambiar de cuenta desde el panel: responde primero y delega en el
