@@ -1,0 +1,4 @@
+{
+  "name": "InboxTriage",
+  "install": "npm ci"
+}
