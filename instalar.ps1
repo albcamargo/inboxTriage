@@ -17,7 +17,15 @@ Write-Host "Instalando dependencias (1-2 min)..."
 npm install --no-fund --no-audit | Out-Null
 Write-Host "Dependencias OK"
 
-# 3. Eleccion de modelo
+# 3. Configuracion
+# El zip de descarga trae .env listo; si clonaste el repo, se crea desde el
+# ejemplo y tendras que poner tus credenciales de Google (README paso 2).
+if (-not (Test-Path .env)) {
+  Copy-Item .env.example .env
+  Write-Host "AVISO: .env creado desde .env.example — te faltara GOOGLE_CLIENT_ID/SECRET (ver README)." -ForegroundColor Yellow
+}
+
+# 4. Eleccion de modelo
 Write-Host ""
 Write-Host "Elige el modelo de IA (se descarga una sola vez):"
 Write-Host "  1) Rapido      - Llama 1B  (~0.8 GB)  menos preciso"
